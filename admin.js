@@ -120,7 +120,7 @@ function renderizarCategoriasAdmin() {
 
     const categoriasVisiveis = new Set(
         window.APP.produtos
-            .filter(produto => !window.produtoEhPecaNotebook || window.produtoEhPecaNotebook(produto))
+            .filter(produto => !window.produtoVisivelNoCatalogo || window.produtoVisivelNoCatalogo(produto))
             .map(produto => produto.categoria)
             .filter(categoria => categoria && (!window.categoriaEhPermitidaNoFiltro || window.categoriaEhPermitidaNoFiltro(categoria)))
     );
@@ -183,7 +183,9 @@ function filtrarProdutosAdmin() {
         const correspondeBusca = !busca || textoProduto.includes(busca);
         const correspondeCategoria = !categoria || produto.categoria === categoria;
 
-        return correspondeBusca && correspondeCategoria;
+        const apareceNoCatalogo = !window.produtoVisivelNoCatalogo || window.produtoVisivelNoCatalogo(produto);
+
+        return apareceNoCatalogo && correspondeBusca && correspondeCategoria;
     });
 
     return ordenarProdutosAdmin(produtos);

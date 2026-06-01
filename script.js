@@ -22,7 +22,13 @@ const NOTEBOOK_INCLUDE_TERMS = [
     'dobradicas',
     'flat',
     'flats',
+    'flet',
     'cabo flat',
+    'cabo flex',
+    'cabo flexivel',
+    'flex cable',
+    'lvds',
+    'edp',
     'bateria',
     'carregador',
     'fonte notebook',
@@ -60,6 +66,7 @@ const NOTEBOOK_INCLUDE_TERMS = [
     'chromebook',
     'compaq',
     'positivo',
+    'samsung',
     'samsung book',
     'lenovo',
     'dell',
@@ -139,6 +146,36 @@ const CATEGORY_FILTER_EXCLUDE_TERMS = [
     'processador',
     'monitores',
     'monitor'
+];
+
+const NOTEBOOK_PART_HINT_TERMS = [
+    'flat',
+    'flats',
+    'flet',
+    'flex',
+    'cabo flex',
+    'cabo flexivel',
+    'lvds',
+    'edp',
+    'tela',
+    'display',
+    'lcd',
+    'led'
+];
+
+const NOTEBOOK_BRAND_TERMS = [
+    'samsung',
+    'lenovo',
+    'dell',
+    'acer',
+    'asus',
+    'hp',
+    'positivo',
+    'compaq',
+    'sony',
+    'lg',
+    'apple',
+    'macbook'
 ];
 
 const APP = {
@@ -429,7 +466,7 @@ function renderizarCategorias() {
 
     const categoriasVisiveis = new Set(
         APP.produtos
-            .filter(produto => produto.quantidade > 0 && produtoEhPecaNotebook(produto))
+            .filter(produtoVisivelNoCatalogo)
             .map(produto => produto.categoria)
             .filter(categoria => categoria && categoriaEhPermitidaNoFiltro(categoria))
     );
@@ -474,8 +511,12 @@ function filtrarProdutos() {
         const correspondeBusca = !busca || textoProduto.includes(busca);
         const correspondeCategoria = !categoria || produto.categoria === categoria;
 
-        return produto.quantidade > 0 && produtoEhPecaNotebook(produto) && correspondeBusca && correspondeCategoria;
+        return produtoVisivelNoCatalogo(produto) && correspondeBusca && correspondeCategoria;
     });
+}
+
+function produtoVisivelNoCatalogo(produto) {
+    return produto.quantidade > 0 && produtoEhPecaNotebook(produto);
 }
 
 function produtoEhPecaNotebook(produto) {
@@ -487,9 +528,11 @@ function produtoEhPecaNotebook(produto) {
     ].join(' '));
 
     const possuiTermoNotebook = NOTEBOOK_INCLUDE_TERMS.some(termo => texto.includes(termo));
+    const parecePecaDeNotebookPorMarca = NOTEBOOK_PART_HINT_TERMS.some(termo => texto.includes(termo))
+        && NOTEBOOK_BRAND_TERMS.some(termo => texto.includes(termo));
     const possuiTermoExcluido = NOTEBOOK_EXCLUDE_TERMS.some(termo => texto.includes(termo));
 
-    return possuiTermoNotebook && !possuiTermoExcluido;
+    return (possuiTermoNotebook || parecePecaDeNotebookPorMarca) && !possuiTermoExcluido;
 }
 
 function categoriaEhPermitidaNoFiltro(categoria) {
@@ -703,5 +746,6 @@ window.salvarImagensNoLocalStorage = salvarImagensNoLocalStorage;
 window.renderizarProdutos = renderizarProdutos;
 window.obterImagensProduto = obterImagensProduto;
 window.trocarImagemModal = trocarImagemModal;
+window.produtoVisivelNoCatalogo = produtoVisivelNoCatalogo;
 window.produtoEhPecaNotebook = produtoEhPecaNotebook;
 window.categoriaEhPermitidaNoFiltro = categoriaEhPermitidaNoFiltro;
