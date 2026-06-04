@@ -3,6 +3,8 @@ const CSV_URL = './dados/produtos.csv';
 const IMAGENS_PATH = './imagens/';
 const WHATSAPP_NUMBER = '556993419933';
 const STORAGE_KEY = 'vstech_imagens_produtos';
+const CODIGO_COLUNAS = ['codigo', 'cod', 'cod.', 'cod produto', 'codigo produto', 'referencia', 'referencia produto', 'sku'];
+const MARCA_COLUNAS = ['marca', 'fabricante', 'brand'];
 const NOTEBOOK_INCLUDE_TERMS = [
     'notebook',
     'laptop',
@@ -285,7 +287,7 @@ function converterLinhasEmProdutos(linhas) {
 function encontrarIndiceCabecalho(linhas) {
     return linhas.findIndex(linha => {
         const colunas = linha.map(normalizarTexto);
-        const temCodigo = colunas.some(valor => valor === 'codigo' || valor === 'cod' || valor === 'cod.');
+        const temCodigo = colunas.some(valor => CODIGO_COLUNAS.includes(valor));
         const temDescricao = colunas.some(valor => valor.includes('descricao') || valor === 'nome' || valor.includes('produto'));
         const temValor = colunas.some(valor => valor.includes('venda') || valor.includes('valor') || valor.includes('preco'));
 
@@ -294,8 +296,9 @@ function encontrarIndiceCabecalho(linhas) {
 }
 
 function criarProdutoDaLinha(linha, cabecalhos, index) {
-    const codigo = obterCampo(linha, cabecalhos, ['codigo', 'cod', 'cod.']);
+    const codigo = obterCampo(linha, cabecalhos, CODIGO_COLUNAS);
     const nome = obterCampo(linha, cabecalhos, ['descricao', 'nome', 'produto']);
+    const marca = obterCampo(linha, cabecalhos, MARCA_COLUNAS);
     const categoria = obterCampo(linha, cabecalhos, ['grupo', 'categoria', 'secao']) || 'Sem categoria';
     const quantidade = Number(String(obterCampo(linha, cabecalhos, ['disponivel', 'estoque', 'quantidade', 'qtd']) || '0').replace(',', '.')) || 0;
     const valorBruto = obterCampo(linha, cabecalhos, ['venda', 'valor', 'preco', 'preco venda']);
@@ -306,6 +309,7 @@ function criarProdutoDaLinha(linha, cabecalhos, index) {
     return {
         codigo: codigoFinal,
         nome: String(nome || 'Produto sem nome').trim(),
+        marca: String(marca || '').trim(),
         categoria: String(categoria || 'Sem categoria').trim(),
         descricao: String(nome || 'Sem descricao').trim(),
         valor: formatarValor(valorBruto),
@@ -334,18 +338,29 @@ function converterCsvEmProdutos(csv) {
         .map(linha => linha.trim())
         .filter(Boolean);
 
+    const cabecalhos = parseCsvLine(linhas[0] || '').map(normalizarTexto);
+    const indiceCodigo = encontrarIndiceCampo(cabecalhos, CODIGO_COLUNAS, 0);
+    const indiceNome = encontrarIndiceCampo(cabecalhos, ['descricao', 'nome', 'produto'], 1);
+    const indiceMarca = encontrarIndiceCampo(cabecalhos, MARCA_COLUNAS, -1);
+    const indiceCategoria = encontrarIndiceCampo(cabecalhos, ['grupo', 'categoria', 'secao'], 2);
+    const indiceDescricao = encontrarIndiceCampo(cabecalhos, ['descricao completa', 'detalhes'], 3);
+    const indiceEstoque = encontrarIndiceCampo(cabecalhos, ['estoque', 'disponivel', 'quantidade', 'qtd'], -1);
+    const indiceValor = encontrarIndiceCampo(cabecalhos, ['venda', 'valor', 'preco', 'preco venda'], -1);
+
     return linhas.slice(1).map((linha, index) => {
         const colunas = parseCsvLine(linha);
-        const codigo = String(colunas[0] || '').trim();
-        const nome = String(colunas[1] || '').trim();
-        const categoria = String(colunas[2] || 'Sem categoria').trim();
-        const descricao = String(colunas[3] || nome || 'Sem descricao').trim();
-        const estoque = String(colunas[colunas.length - 1] || 'Indisponivel').trim();
-        const valor = colunas.slice(4, -1).join(',').trim();
+        const codigo = String(colunas[indiceCodigo] || '').trim();
+        const nome = String(colunas[indiceNome] || '').trim();
+        const marca = indiceMarca >= 0 ? String(colunas[indiceMarca] || '').trim() : '';
+        const categoria = String(colunas[indiceCategoria] || 'Sem categoria').trim();
+        const descricao = String(colunas[indiceDescricao] || nome || 'Sem descricao').trim();
+        const estoque = String(colunas[indiceEstoque >= 0 ? indiceEstoque : colunas.length - 1] || 'Indisponivel').trim();
+        const valor = indiceValor >= 0 ? String(colunas[indiceValor] || '').trim() : colunas.slice(4, -1).join(',').trim();
 
         return {
             codigo: codigo || `ITEM-${index + 1}`,
             nome: nome || 'Produto sem nome',
+            marca,
             categoria,
             descricao,
             valor: valor || 'Consulte',
@@ -354,6 +369,17 @@ function converterCsvEmProdutos(csv) {
             imagens: obterImagensProduto(codigo)
         };
     }).filter(produto => produto.nome !== 'Produto sem nome');
+}
+
+function encontrarIndiceCampo(cabecalhos, nomes, indicePadrao) {
+    const nomesNormalizados = nomes.map(normalizarTexto);
+    let index = cabecalhos.findIndex(cabecalho => nomesNormalizados.includes(cabecalho));
+
+    if (index === -1) {
+        index = cabecalhos.findIndex(cabecalho => nomesNormalizados.some(nome => cabecalho.includes(nome)));
+    }
+
+    return index >= 0 ? index : indicePadrao;
 }
 
 function parseCsvLine(linha) {
@@ -504,6 +530,7 @@ function filtrarProdutos() {
         const textoProduto = normalizarTexto([
             produto.codigo,
             produto.nome,
+            produto.marca,
             produto.categoria,
             produto.descricao
         ].join(' '));
@@ -516,13 +543,14 @@ function filtrarProdutos() {
 }
 
 function produtoVisivelNoCatalogo(produto) {
-    return produto.quantidade > 0 && produtoEhPecaNotebook(produto);
+    return produto.quantidade > 0;
 }
 
 function produtoEhPecaNotebook(produto) {
     const texto = normalizarTexto([
         produto.codigo,
         produto.nome,
+        produto.marca,
         produto.categoria,
         produto.descricao
     ].join(' '));
@@ -556,7 +584,10 @@ function criarCardProduto(produto) {
             <span class="product-category-badge">${escapeHtml(produto.categoria)}</span>
         </div>
         <div class="product-content">
-            <div class="product-code">${escapeHtml(produto.codigo)}</div>
+            <div class="product-meta-row">
+                ${criarMetaProduto('Codigo', produto.codigo, 'product-code')}
+                ${criarMetaProduto('Marca', produto.marca, 'product-brand')}
+            </div>
             <h2 class="product-name">${escapeHtml(produto.nome)}</h2>
             <p class="product-description">${escapeHtml(produto.descricao)}</p>
             <div class="product-price">${escapeHtml(produto.valor)}</div>
@@ -580,6 +611,11 @@ function criarCardProduto(produto) {
     });
 
     return card;
+}
+
+function criarMetaProduto(rotulo, valor, classe) {
+    if (!valor) return '';
+    return `<div class="${classe}"><span>${escapeHtml(rotulo)}:</span> ${escapeHtml(valor)}</div>`;
 }
 
 function criarImagemProduto(produto) {
@@ -608,6 +644,7 @@ function abrirModal(produto) {
 
     document.getElementById('modalName').textContent = produto.nome;
     document.getElementById('modalCode').textContent = produto.codigo;
+    document.getElementById('modalBrand').textContent = produto.marca || 'Nao informada';
     document.getElementById('modalCategory').textContent = produto.categoria;
     document.getElementById('modalDescription').textContent = produto.descricao;
     document.getElementById('modalPrice').textContent = produto.valor;
@@ -679,7 +716,7 @@ Tenho interesse neste produto:
 
  Produto: ${produto.nome}
  Código: ${produto.codigo}
- Valor: ${produto.valor}
+ ${produto.marca ? `Marca: ${produto.marca}\n ` : ''}Valor: ${produto.valor}
 
 Poderia me passar mais informações?`;
 

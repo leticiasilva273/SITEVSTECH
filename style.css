@@ -446,7 +446,15 @@ body::before {
     flex-grow: 1;
 }
 
+.product-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
 .product-code,
+.product-brand,
 .admin-product-code {
     width: fit-content;
     color: var(--muted);
@@ -457,6 +465,17 @@ body::before {
     font-size: 12px;
     font-weight: 800;
     text-transform: uppercase;
+}
+
+.product-brand {
+    color: #bbf7d0;
+    border-color: rgba(34, 197, 94, 0.28);
+    background: rgba(34, 197, 94, 0.08);
+}
+
+.product-code span,
+.product-brand span {
+    color: var(--muted);
 }
 
 .product-name,

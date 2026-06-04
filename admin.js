@@ -176,6 +176,7 @@ function filtrarProdutosAdmin() {
         const textoProduto = normalizarTexto([
             produto.codigo,
             produto.nome,
+            produto.marca,
             produto.categoria,
             produto.descricao
         ].join(' '));
@@ -223,6 +224,11 @@ function criarCardProdutoAdmin(produto) {
             </div>
         </div>
 
+        ${produto.marca ? `
+        <div class="admin-product-info">
+            <strong>Marca:</strong> ${escapeHtml(produto.marca)}
+        </div>
+        ` : ''}
         <div class="admin-product-info">
             <strong>Categoria:</strong> ${escapeHtml(produto.categoria)}
         </div>
