@@ -6,6 +6,15 @@ const WHATSAPP_NUMBER = '556993419933';
 const STORAGE_KEY = 'vstech_imagens_produtos';
 const CODIGO_COLUNAS = ['codigo', 'cod', 'cod.', 'cod produto', 'codigo produto', 'referencia', 'referencia produto', 'sku'];
 const MARCA_COLUNAS = ['marca', 'fabricante', 'brand'];
+const CARREGADOR_NOTEBOOK_TERMS = [
+    'carregador notebook',
+    'carregador para notebook',
+    'fonte notebook',
+    'fonte para notebook',
+    'fonte p notebook',
+    'fonte p/ notebook',
+    'fontes nb'
+];
 const NOTEBOOK_INCLUDE_TERMS = [
     'notebook',
     'laptop',
@@ -313,7 +322,7 @@ function criarProdutoDaLinha(linha, cabecalhos, index) {
         marca: String(marca || '').trim(),
         categoria: String(categoria || 'Sem categoria').trim(),
         descricao: String(nome || 'Sem descricao').trim(),
-        valor: formatarValor(valorBruto),
+        valor: formatarValorComDesconto(valorBruto, { nome, categoria }),
         estoque: quantidade > 0 ? `Disponível: ${quantidade}` : 'Indisponível',
         quantidade,
         localizacao: obterCampo(linha, cabecalhos, ['localizacao', 'local']),
@@ -364,7 +373,7 @@ function converterCsvEmProdutos(csv) {
             marca,
             categoria,
             descricao,
-            valor: valor || 'Consulte',
+            valor: formatarValorComDesconto(valor, { nome, categoria, descricao }),
             estoque,
             quantidade: obterQuantidadeEstoque(estoque),
             imagens: obterImagensProduto(codigo)
@@ -437,6 +446,55 @@ function formatarValor(valor) {
     }
 
     return texto || 'Consulte';
+}
+
+function formatarValorComDesconto(valor, produto) {
+    const numero = obterValorNumerico(valor);
+    if (!Number.isFinite(numero)) return formatarValor(valor);
+
+    const percentual = produtoEhCarregadorNotebook(produto) ? 15 : 10;
+    const valorComDesconto = numero * (1 - percentual / 100);
+
+    return valorComDesconto.toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+    });
+}
+
+function obterValorNumerico(valor) {
+    if (typeof valor === 'number') return valor;
+
+    const texto = String(valor || '')
+        .replace(/[^\d,.-]/g, '')
+        .trim();
+
+    if (!texto) return NaN;
+
+    const ultimaVirgula = texto.lastIndexOf(',');
+    const ultimoPonto = texto.lastIndexOf('.');
+    const separadorDecimal = Math.max(ultimaVirgula, ultimoPonto);
+    const temApenasUmSeparador = (texto.match(/[.,]/g) || []).length === 1;
+    const casasDepoisDoSeparador = separadorDecimal >= 0 ? texto.length - separadorDecimal - 1 : 0;
+
+    if (temApenasUmSeparador && casasDepoisDoSeparador === 3) {
+        return Number(texto.replace(/[.,]/g, ''));
+    }
+
+    const inteiro = texto.slice(0, separadorDecimal).replace(/[.,]/g, '');
+    const decimal = separadorDecimal >= 0 ? texto.slice(separadorDecimal + 1).replace(/[.,]/g, '') : '';
+    const numeroNormalizado = separadorDecimal >= 0 ? `${inteiro}.${decimal}` : texto.replace(/[.,]/g, '');
+
+    return Number(numeroNormalizado);
+}
+
+function produtoEhCarregadorNotebook(produto) {
+    const texto = normalizarTexto([
+        produto?.nome,
+        produto?.categoria,
+        produto?.descricao
+    ].filter(Boolean).join(' '));
+
+    return CARREGADOR_NOTEBOOK_TERMS.some(termo => texto.includes(termo));
 }
 
 function configurarEventos() {
