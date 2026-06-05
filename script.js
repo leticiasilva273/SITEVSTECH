@@ -1,6 +1,7 @@
 const XLS_URL = './dados/produtos.xls';
 const CSV_URL = './dados/produtos.csv';
 const IMAGENS_PATH = './imagens/';
+const IMAGENS_MAP_URL = './imagens/produtos.json';
 const WHATSAPP_NUMBER = '556993419933';
 const STORAGE_KEY = 'vstech_imagens_produtos';
 const CODIGO_COLUNAS = ['codigo', 'cod', 'cod.', 'cod produto', 'codigo produto', 'referencia', 'referencia produto', 'sku'];
@@ -197,8 +198,8 @@ const APP = {
 window.APP = APP;
 window.IMAGENS_PATH = IMAGENS_PATH;
 
-document.addEventListener('DOMContentLoaded', () => {
-    carregarImagensDoLocalStorage();
+document.addEventListener('DOMContentLoaded', async () => {
+    await carregarImagens();
     configurarEventos();
     carregarProdutos();
 });
@@ -725,12 +726,24 @@ Poderia me passar mais informações?`;
     window.open(url, '_blank', 'noopener');
 }
 
-function carregarImagensDoLocalStorage() {
+async function carregarImagens() {
+    let imagensPublicadas = {};
+
     try {
-        APP.imagensPorProduto = normalizarMapaImagens(JSON.parse(localStorage.getItem(STORAGE_KEY)) || {});
+        const response = await fetch(IMAGENS_MAP_URL, { cache: 'no-store' });
+        if (response.ok) {
+            imagensPublicadas = normalizarMapaImagens(await response.json());
+        }
+    } catch (error) {
+        console.warn('Nao foi possivel carregar imagens publicadas:', error);
+    }
+
+    try {
+        const imagensLocais = normalizarMapaImagens(JSON.parse(localStorage.getItem(STORAGE_KEY)) || {});
+        APP.imagensPorProduto = { ...imagensPublicadas, ...imagensLocais };
     } catch (error) {
         console.warn('Nao foi possivel ler imagens salvas:', error);
-        APP.imagensPorProduto = {};
+        APP.imagensPorProduto = imagensPublicadas;
     }
 }
 

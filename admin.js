@@ -414,6 +414,19 @@ function exibirEstatisticas() {
     console.log('Imagens por produto:', window.APP.imagensPorProduto);
 }
 
+function baixarAssociacoesImagens() {
+    const conteudo = JSON.stringify(window.APP.imagensPorProduto, null, 2);
+    const arquivo = new Blob([conteudo], { type: 'application/json' });
+    const link = document.createElement('a');
+
+    link.href = URL.createObjectURL(arquivo);
+    link.download = 'produtos.json';
+    link.click();
+    URL.revokeObjectURL(link.href);
+
+    alert('Arquivo produtos.json baixado. Coloque-o dentro da pasta imagens e publique novamente no GitHub.');
+}
+
 function escapeHtml(valor) {
     return String(valor || '').replace(/[&<>"']/g, char => ({
         '&': '&amp;',
@@ -440,3 +453,4 @@ window.removerImagemProduto = removerImagemProduto;
 window.fazerLogoutAdmin = fazerLogoutAdmin;
 window.autenticarAdmin = autenticarAdmin;
 window.exibirEstatisticas = exibirEstatisticas;
+window.baixarAssociacoesImagens = baixarAssociacoesImagens;
