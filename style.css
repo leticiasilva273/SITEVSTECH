@@ -149,6 +149,14 @@ body::before {
     padding: 16px;
 }
 
+.catalog-summary {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 800;
+    text-align: right;
+}
+
 .search-box,
 .filter-box,
 .admin-filter-field {
@@ -199,6 +207,7 @@ body::before {
 
 .btn-clear,
 .btn-interest,
+.btn-copy-code,
 .auth-form button,
 .btn-pick-images,
 .btn-modal-save,
@@ -216,7 +225,8 @@ body::before {
 
 .btn-clear,
 .btn-modal-close,
-.btn-remove {
+.btn-remove,
+.btn-copy-code {
     padding: 11px 16px;
     color: var(--text);
     background: #202b3a;
@@ -225,13 +235,15 @@ body::before {
 
 .btn-clear:hover,
 .btn-modal-close:hover,
-.btn-remove:hover {
+.btn-remove:hover,
+.btn-copy-code:hover {
     background: #273548;
     transform: translateY(-1px);
 }
 
 .btn-clear:active,
 .btn-interest:active,
+.btn-copy-code:active,
 .auth-form button:active,
 .btn-pick-images:active,
 .btn-modal-save:active,
@@ -257,6 +269,18 @@ body::before {
 .admin-notice button:hover {
     transform: translateY(-1px);
     background: linear-gradient(135deg, var(--green-strong), var(--green));
+}
+
+.btn-copy-code {
+    width: fit-content;
+    margin: 4px 0 12px;
+    color: #d8f3ff;
+    background: rgba(56, 189, 248, 0.10);
+    border-color: rgba(56, 189, 248, 0.34);
+}
+
+.btn-copy-code:hover {
+    background: rgba(56, 189, 248, 0.18);
 }
 
 .btn-pick-images {
@@ -473,6 +497,46 @@ body::before {
     background: rgba(34, 197, 94, 0.08);
 }
 
+.product-brand.brand-bbdi,
+#modalBrand.brand-bbdi {
+    color: #bbf7d0;
+    border-color: rgba(34, 197, 94, 0.46);
+    background: rgba(34, 197, 94, 0.16);
+}
+
+.product-brand.brand-bringit,
+#modalBrand.brand-bringit {
+    color: #bfdbfe;
+    border-color: rgba(59, 130, 246, 0.50);
+    background: rgba(59, 130, 246, 0.16);
+}
+
+.product-brand.brand-ml,
+#modalBrand.brand-ml {
+    color: #fef3c7;
+    border-color: rgba(245, 158, 11, 0.56);
+    background: rgba(245, 158, 11, 0.18);
+}
+
+.product-brand.brand-other,
+#modalBrand.brand-other {
+    color: #e9d5ff;
+    border-color: rgba(168, 85, 247, 0.50);
+    background: rgba(168, 85, 247, 0.16);
+}
+
+#modalBrand.brand-bbdi,
+#modalBrand.brand-bringit,
+#modalBrand.brand-ml,
+#modalBrand.brand-other {
+    display: inline-flex;
+    width: fit-content;
+    padding: 3px 8px;
+    border: 1px solid;
+    border-radius: 999px;
+    font-weight: 900;
+}
+
 .product-code span,
 .product-brand span {
     color: var(--muted);
@@ -662,6 +726,27 @@ body::before {
     object-fit: contain;
     padding: 14px;
     animation: imageFade 220ms ease both;
+}
+
+.image-zoom-lens {
+    position: absolute;
+    z-index: 4;
+    width: 190px;
+    height: 190px;
+    display: none;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    border: 3px solid rgba(255, 255, 255, 0.9);
+    background-color: #fff;
+    background-repeat: no-repeat;
+    background-size: 600%;
+    box-shadow: 0 16px 38px rgba(0, 0, 0, 0.5);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .modal-image {
+        cursor: zoom-in;
+    }
 }
 
 @keyframes imageFade {
@@ -1162,6 +1247,10 @@ select:focus-visible {
         bottom: 8px;
         font-size: 11px;
         padding: 4px 8px;
+    }
+
+    .image-zoom-lens {
+        display: none !important;
     }
 }
 

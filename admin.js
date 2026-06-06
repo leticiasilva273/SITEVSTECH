@@ -120,9 +120,9 @@ function renderizarCategoriasAdmin() {
 
     const categoriasVisiveis = new Set(
         window.APP.produtos
-            .filter(produto => !window.produtoVisivelNoCatalogo || window.produtoVisivelNoCatalogo(produto))
+            .filter(produto => !window.produtoTemEstoque || window.produtoTemEstoque(produto))
             .map(produto => produto.categoria)
-            .filter(categoria => categoria && (!window.categoriaEhPermitidaNoFiltro || window.categoriaEhPermitidaNoFiltro(categoria)))
+            .filter(Boolean)
     );
 
     Array.from(categoriasVisiveis).sort().forEach(categoria => {
@@ -184,9 +184,9 @@ function filtrarProdutosAdmin() {
         const correspondeBusca = !busca || textoProduto.includes(busca);
         const correspondeCategoria = !categoria || produto.categoria === categoria;
 
-        const apareceNoCatalogo = !window.produtoVisivelNoCatalogo || window.produtoVisivelNoCatalogo(produto);
+        const apareceNoAdmin = !window.produtoTemEstoque || window.produtoTemEstoque(produto);
 
-        return apareceNoCatalogo && correspondeBusca && correspondeCategoria;
+        return apareceNoAdmin && correspondeBusca && correspondeCategoria;
     });
 
     return ordenarProdutosAdmin(produtos);

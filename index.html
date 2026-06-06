@@ -41,6 +41,7 @@
 
                 <button id="clearFilters" class="btn-clear" type="button">Limpar filtros</button>
             </div>
+            <div id="catalogSummary" class="catalog-summary" aria-live="polite"></div>
         </div>
     </section>
 
@@ -76,6 +77,7 @@
                 <div class="modal-carousel">
                     <button id="carouselPrev" class="carousel-btn carousel-prev" type="button" onclick="trocarImagemModal(-1)" aria-label="Foto anterior">&#8249;</button>
                     <img id="modalImage" src="" alt="Imagem do produto" class="modal-image">
+                    <div id="imageZoomLens" class="image-zoom-lens" aria-hidden="true"></div>
                     <div id="carouselEmpty" class="carousel-empty">Sem imagem</div>
                     <button id="carouselNext" class="carousel-btn carousel-next" type="button" onclick="trocarImagemModal(1)" aria-label="Próxima foto">&#8250;</button>
                     <span id="carouselCounter" class="carousel-counter"></span>
@@ -88,6 +90,7 @@
                     <p class="modal-description" id="modalDescription"></p>
                     <p class="modal-price" id="modalPrice"></p>
                     <p class="modal-stock" id="modalStock"></p>
+                    <button id="copyProductBtn" class="btn-copy-code" type="button">Copiar informacoes</button>
                     <button id="modalInterestBtn" class="btn-interest" type="button">Tenho interesse</button>
                 </div>
             </div>

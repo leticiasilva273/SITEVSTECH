@@ -124,9 +124,6 @@ const NOTEBOOK_EXCLUDE_TERMS = [
     'fonte real',
     'cooler cpu',
     'memoria ram',
-    'ssd',
-    'hd sata',
-    'impressora',
     'pç impressora',
     'peca impressora',
     'toner',
@@ -152,7 +149,6 @@ const CATEGORY_FILTER_EXCLUDE_TERMS = [
     'periferico',
     'perifericos',
     'desktop',
-    'impressora',
     'pç impressora',
     'peca impressora',
     'processador',
@@ -210,6 +206,7 @@ window.IMAGENS_PATH = IMAGENS_PATH;
 document.addEventListener('DOMContentLoaded', async () => {
     await carregarImagens();
     configurarEventos();
+    configurarLupaImagem();
     carregarProdutos();
 });
 
@@ -602,6 +599,10 @@ function filtrarProdutos() {
 }
 
 function produtoVisivelNoCatalogo(produto) {
+    return produtoTemEstoque(produto) && categoriaEhPermitidaNoFiltro(produto.categoria);
+}
+
+function produtoTemEstoque(produto) {
     return produto.quantidade > 0;
 }
 
@@ -614,17 +615,17 @@ function produtoEhPecaNotebook(produto) {
         produto.descricao
     ].join(' '));
 
-    const possuiTermoNotebook = NOTEBOOK_INCLUDE_TERMS.some(termo => texto.includes(termo));
-    const parecePecaDeNotebookPorMarca = NOTEBOOK_PART_HINT_TERMS.some(termo => texto.includes(termo))
-        && NOTEBOOK_BRAND_TERMS.some(termo => texto.includes(termo));
-    const possuiTermoExcluido = NOTEBOOK_EXCLUDE_TERMS.some(termo => texto.includes(termo));
+    const possuiTermoNotebook = NOTEBOOK_INCLUDE_TERMS.some(termo => texto.includes(normalizarTexto(termo)));
+    const parecePecaDeNotebookPorMarca = NOTEBOOK_PART_HINT_TERMS.some(termo => texto.includes(normalizarTexto(termo)))
+        && NOTEBOOK_BRAND_TERMS.some(termo => texto.includes(normalizarTexto(termo)));
+    const possuiTermoExcluido = NOTEBOOK_EXCLUDE_TERMS.some(termo => texto.includes(normalizarTexto(termo)));
 
     return (possuiTermoNotebook || parecePecaDeNotebookPorMarca) && !possuiTermoExcluido;
 }
 
 function categoriaEhPermitidaNoFiltro(categoria) {
     const texto = normalizarTexto(categoria);
-    return !CATEGORY_FILTER_EXCLUDE_TERMS.some(termo => texto.includes(termo));
+    return !CATEGORY_FILTER_EXCLUDE_TERMS.some(termo => texto.includes(normalizarTexto(termo)));
 }
 
 function criarCardProduto(produto) {
@@ -719,6 +720,7 @@ function abrirModal(produto) {
 
 function atualizarCarouselModal(nomeProduto) {
     const modalImage = document.getElementById('modalImage');
+    const zoomLens = document.getElementById('imageZoomLens');
     const prevBtn = document.getElementById('carouselPrev');
     const nextBtn = document.getElementById('carouselNext');
     const counter = document.getElementById('carouselCounter');
@@ -732,10 +734,12 @@ function atualizarCarouselModal(nomeProduto) {
             modalImage.src = `${IMAGENS_PATH}${encodeURI(imagemAtual)}`;
             modalImage.alt = nomeProduto;
             modalImage.style.display = 'block';
+            if (zoomLens) zoomLens.style.display = 'none';
         } else {
             modalImage.removeAttribute('src');
             modalImage.alt = '';
             modalImage.style.display = 'none';
+            if (zoomLens) zoomLens.style.display = 'none';
         }
     }
 
@@ -745,6 +749,37 @@ function atualizarCarouselModal(nomeProduto) {
     const mostrarControles = imagens.length > 1;
     if (prevBtn) prevBtn.style.display = mostrarControles ? 'flex' : 'none';
     if (nextBtn) nextBtn.style.display = mostrarControles ? 'flex' : 'none';
+}
+
+function configurarLupaImagem() {
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+
+    const carousel = document.querySelector('.modal-carousel');
+    const imagem = document.getElementById('modalImage');
+    const lupa = document.getElementById('imageZoomLens');
+    if (!carousel || !imagem || !lupa) return;
+
+    imagem.addEventListener('mousemove', event => {
+        if (!imagem.src || imagem.style.display === 'none') return;
+
+        const imagemRect = imagem.getBoundingClientRect();
+        const carouselRect = carousel.getBoundingClientRect();
+        const x = Math.max(0, Math.min(event.clientX - imagemRect.left, imagemRect.width));
+        const y = Math.max(0, Math.min(event.clientY - imagemRect.top, imagemRect.height));
+        const metadeLupa = lupa.offsetWidth / 2;
+        const esquerda = Math.max(metadeLupa, Math.min(event.clientX - carouselRect.left, carouselRect.width - metadeLupa));
+        const topo = Math.max(metadeLupa, Math.min(event.clientY - carouselRect.top, carouselRect.height - metadeLupa));
+
+        lupa.style.left = `${esquerda}px`;
+        lupa.style.top = `${topo}px`;
+        lupa.style.backgroundImage = `url("${imagem.currentSrc || imagem.src}")`;
+        lupa.style.backgroundPosition = `${(x / imagemRect.width) * 100}% ${(y / imagemRect.height) * 100}%`;
+        lupa.style.display = 'block';
+    });
+
+    imagem.addEventListener('mouseleave', () => {
+        lupa.style.display = 'none';
+    });
 }
 
 function trocarImagemModal(direcao) {
@@ -855,5 +890,6 @@ window.renderizarProdutos = renderizarProdutos;
 window.obterImagensProduto = obterImagensProduto;
 window.trocarImagemModal = trocarImagemModal;
 window.produtoVisivelNoCatalogo = produtoVisivelNoCatalogo;
+window.produtoTemEstoque = produtoTemEstoque;
 window.produtoEhPecaNotebook = produtoEhPecaNotebook;
 window.categoriaEhPermitidaNoFiltro = categoriaEhPermitidaNoFiltro;
