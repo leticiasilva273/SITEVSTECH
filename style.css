@@ -525,6 +525,18 @@ body::before {
     background: rgba(168, 85, 247, 0.16);
 }
 
+#modalBrand {
+    display: inline-flex;
+    width: fit-content;
+    padding: 3px 8px;
+    border: 1px solid;
+    border-radius: 999px;
+    font-weight: 900;
+    color: #bbf7d0;
+    border-color: rgba(34, 197, 94, 0.28);
+    background: rgba(34, 197, 94, 0.08);
+}
+
 #modalBrand.brand-bbdi,
 #modalBrand.brand-bringit,
 #modalBrand.brand-ml,

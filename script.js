@@ -203,6 +203,56 @@ const APP = {
 window.APP = APP;
 window.IMAGENS_PATH = IMAGENS_PATH;
 
+function obterClasseMarca(marca) {
+    const texto = normalizarTexto(marca);
+    if (!texto) return '';
+
+    const tokens = texto.split(/\s+/);
+    if (tokens.includes('bbdi')) return 'brand-bbdi';
+    if (tokens.includes('bringit')) return 'brand-bringit';
+    if (tokens.includes('ml')) return 'brand-ml';
+    return '';
+}
+
+function gerarCoresMarca(marca) {
+    const texto = normalizarTexto(marca);
+    if (!texto) return '';
+
+    const tokens = texto.split(/\s+/);
+    if (tokens.includes('bbdi')) {
+        return 'color: #bbf7d0; border-color: rgba(34, 197, 94, 0.46); background: rgba(34, 197, 94, 0.16);';
+    }
+    if (tokens.includes('bringit')) {
+        return 'color: #bfdbfe; border-color: rgba(59, 130, 246, 0.50); background: rgba(59, 130, 246, 0.16);';
+    }
+    if (tokens.includes('ml')) {
+        return 'color: #fef3c7; border-color: rgba(245, 158, 11, 0.56); background: rgba(245, 158, 11, 0.18);';
+    }
+
+    let hash = 0;
+    for (let i = 0; i < texto.length; i++) {
+        hash = texto.charCodeAt(i) + ((hash << 5) - hash);
+    }
+
+    const hue = ((hash % 360) + 360) % 360;
+    const color = `hsl(${hue}, 95%, 93%)`;
+    const borderColor = `hsla(${hue}, 85%, 62%, 0.55)`;
+    const background = `hsla(${hue}, 85%, 15%, 0.16)`;
+
+    return `color: ${color}; border-color: ${borderColor}; background: ${background};`;
+}
+
+function criarMetaProduto(rotulo, valor, classe) {
+    if (!valor) return '';
+    if (classe !== 'product-brand') {
+        return `<div class="${classe}"><span>${escapeHtml(rotulo)}:</span> ${escapeHtml(valor)}</div>`;
+    }
+
+    const classeMarca = obterClasseMarca(valor);
+    const estiloMarca = classeMarca ? '' : gerarCoresMarca(valor);
+    return `<div class="${classe}${classeMarca ? ` ${classeMarca}` : ''}"${estiloMarca ? ` style="${estiloMarca}"` : ''}><span>${escapeHtml(rotulo)}:</span> ${escapeHtml(valor)}</div>`;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     await carregarImagens();
     configurarEventos();
@@ -673,11 +723,6 @@ function criarCardProduto(produto) {
     return card;
 }
 
-function criarMetaProduto(rotulo, valor, classe) {
-    if (!valor) return '';
-    return `<div class="${classe}"><span>${escapeHtml(rotulo)}:</span> ${escapeHtml(valor)}</div>`;
-}
-
 function criarImagemProduto(produto) {
     const primeiraImagem = obterImagensProduto(produto.codigo)[0];
 
@@ -704,7 +749,13 @@ function abrirModal(produto) {
 
     document.getElementById('modalName').textContent = produto.nome;
     document.getElementById('modalCode').textContent = produto.codigo;
-    document.getElementById('modalBrand').textContent = produto.marca || 'Nao informada';
+    const modalBrand = document.getElementById('modalBrand');
+    if (modalBrand) {
+        const classeMarca = obterClasseMarca(produto.marca);
+        modalBrand.textContent = produto.marca || 'Nao informada';
+        modalBrand.className = classeMarca;
+        modalBrand.style.cssText = `display:inline-flex; width:fit-content; padding:3px 8px; border:1px solid; border-radius:999px; font-weight:900; ${classeMarca ? '' : gerarCoresMarca(produto.marca)}`;
+    }
     document.getElementById('modalCategory').textContent = produto.categoria;
     document.getElementById('modalDescription').textContent = produto.descricao;
     document.getElementById('modalPrice').textContent = produto.valor;

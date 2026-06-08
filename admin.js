@@ -414,8 +414,34 @@ function exibirEstatisticas() {
     console.log('Imagens por produto:', window.APP.imagensPorProduto);
 }
 
-function baixarAssociacoesImagens() {
+async function salvarAssociacoesImagens() {
     const conteudo = JSON.stringify(window.APP.imagensPorProduto, null, 2);
+
+    if ('showSaveFilePicker' in window) {
+        try {
+            const arquivo = await window.showSaveFilePicker({
+                suggestedName: 'produtos.json',
+                types: [{
+                    description: 'Arquivo de associacoes de imagens',
+                    accept: { 'application/json': ['.json'] }
+                }]
+            });
+            const gravador = await arquivo.createWritable();
+            await gravador.write(conteudo);
+            await gravador.close();
+
+            alert('Associacoes salvas. Selecione/substitua imagens/produtos.json e depois publique no GitHub.');
+            return;
+        } catch (error) {
+            if (error?.name === 'AbortError') return;
+            console.warn('Nao foi possivel salvar direto no arquivo:', error);
+        }
+    }
+
+    baixarAssociacoesImagens(conteudo);
+}
+
+function baixarAssociacoesImagens(conteudo) {
     const arquivo = new Blob([conteudo], { type: 'application/json' });
     const link = document.createElement('a');
 
@@ -424,7 +450,7 @@ function baixarAssociacoesImagens() {
     link.click();
     URL.revokeObjectURL(link.href);
 
-    alert('Arquivo produtos.json baixado. Coloque-o dentro da pasta imagens e publique novamente no GitHub.');
+    alert('Seu navegador nao permitiu substituir direto. O arquivo produtos.json foi baixado; coloque-o dentro da pasta imagens e publique novamente no GitHub.');
 }
 
 function escapeHtml(valor) {
@@ -453,4 +479,4 @@ window.removerImagemProduto = removerImagemProduto;
 window.fazerLogoutAdmin = fazerLogoutAdmin;
 window.autenticarAdmin = autenticarAdmin;
 window.exibirEstatisticas = exibirEstatisticas;
-window.baixarAssociacoesImagens = baixarAssociacoesImagens;
+window.salvarAssociacoesImagens = salvarAssociacoesImagens;
