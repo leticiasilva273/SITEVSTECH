@@ -5,6 +5,7 @@ const ADMIN = {
     selecaoTemporaria: new Set(),
     filtros: {
         busca: '',
+        codigoFabricante: '',
         categoria: '',
         ordenacao: 'default'
     }
@@ -64,6 +65,7 @@ function fazerLogoutAdmin() {
 
 function configurarFiltrosAdmin() {
     const searchInput = document.getElementById('adminSearchInput');
+    const manufacturerCodeFilter = document.getElementById('adminManufacturerCodeFilter');
     const categoryFilter = document.getElementById('adminCategoryFilter');
     const sortFilter = document.getElementById('adminSortFilter');
     const modal = document.getElementById('adminImageModal');
@@ -71,6 +73,13 @@ function configurarFiltrosAdmin() {
     if (searchInput) {
         searchInput.addEventListener('input', event => {
             ADMIN.filtros.busca = event.target.value;
+            renderizarProdutosAdmin();
+        });
+    }
+
+    if (manufacturerCodeFilter) {
+        manufacturerCodeFilter.addEventListener('input', event => {
+            ADMIN.filtros.codigoFabricante = event.target.value;
             renderizarProdutosAdmin();
         });
     }
@@ -170,11 +179,13 @@ function renderizarProdutosAdmin() {
 
 function filtrarProdutosAdmin() {
     const busca = normalizarTexto(ADMIN.filtros.busca);
+    const codigoFabricante = normalizarTexto(ADMIN.filtros.codigoFabricante);
     const categoria = ADMIN.filtros.categoria;
 
     const produtos = window.APP.produtos.filter(produto => {
         const textoProduto = normalizarTexto([
             produto.codigo,
+            produto.codigoFabricante,
             produto.nome,
             produto.marca,
             produto.categoria,
@@ -182,11 +193,12 @@ function filtrarProdutosAdmin() {
         ].join(' '));
 
         const correspondeBusca = !busca || textoProduto.includes(busca);
+        const correspondeCodigoFabricante = !codigoFabricante || normalizarTexto(produto.codigoFabricante).includes(codigoFabricante);
         const correspondeCategoria = !categoria || produto.categoria === categoria;
 
         const apareceNoAdmin = !window.produtoTemEstoque || window.produtoTemEstoque(produto);
 
-        return apareceNoAdmin && correspondeBusca && correspondeCategoria;
+        return apareceNoAdmin && correspondeBusca && correspondeCodigoFabricante && correspondeCategoria;
     });
 
     return ordenarProdutosAdmin(produtos);
@@ -227,6 +239,11 @@ function criarCardProdutoAdmin(produto) {
         ${produto.marca ? `
         <div class="admin-product-info">
             <strong>Marca:</strong> ${escapeHtml(produto.marca)}
+        </div>
+        ` : ''}
+        ${produto.codigoFabricante ? `
+        <div class="admin-product-info">
+            <strong>Número fabricante:</strong> ${escapeHtml(produto.codigoFabricante)}
         </div>
         ` : ''}
         <div class="admin-product-info">

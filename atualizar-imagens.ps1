@@ -8,8 +8,8 @@ if (-not (Test-Path -LiteralPath $pastaImagens)) {
 }
 
 $imagens = Get-ChildItem -LiteralPath $pastaImagens -File |
-    Where-Object { $extensoes -contains $_.Extension.ToLowerInvariant() } |
-    Sort-Object Name |
+    Where-Object { ($extensoes -contains $_.Extension.ToLowerInvariant()) -and ($_.Name -notlike "logo-vstech*") } |
+    Sort-Object LastWriteTime -Descending |
     Select-Object -ExpandProperty Name
 
 $json = $imagens | ConvertTo-Json -Depth 1

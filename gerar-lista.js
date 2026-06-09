@@ -30,15 +30,25 @@ try {
     }
 
     // Ler arquivos da pasta
-    const arquivos = fs.readdirSync(pastaImagens);
+    const arquivos = fs.readdirSync(pastaImagens, { withFileTypes: true });
 
     // Filtrar apenas imagens
     const imagens = arquivos
         .filter(arquivo => {
-            const ext = path.extname(arquivo).toLowerCase();
-            return extensoesSuportadas.includes(ext);
+            const ext = path.extname(arquivo.name).toLowerCase();
+            return arquivo.isFile()
+                && extensoesSuportadas.includes(ext)
+                && !arquivo.name.toLowerCase().startsWith('logo-vstech');
         })
-        .sort();
+        .map(arquivo => {
+            const caminho = path.join(pastaImagens, arquivo.name);
+            return {
+                nome: arquivo.name,
+                dataModificacao: fs.statSync(caminho).mtimeMs
+            };
+        })
+        .sort((a, b) => b.dataModificacao - a.dataModificacao)
+        .map(arquivo => arquivo.nome);
 
     // Salvar em JSON
     fs.writeFileSync(caminhoIndex, JSON.stringify(imagens, null, 2));

@@ -5,6 +5,7 @@ const IMAGENS_MAP_URL = './imagens/produtos.json';
 const WHATSAPP_NUMBER = '556993419933';
 const STORAGE_KEY = 'vstech_imagens_produtos';
 const CODIGO_COLUNAS = ['codigo', 'cod', 'cod.', 'cod produto', 'codigo produto', 'referencia', 'referencia produto', 'sku'];
+const CODIGO_FABRICANTE_COLUNAS = ['codigo fabricante', 'codigo do fabricante', 'cod fabricante', 'cod. fabricante', 'cod fab', 'codigo fab', 'numero fabricante', 'numero do fabricante', 'num fabricante', 'n fabricante', 'nº fabricante', 'n° fabricante', 'no fabricante', 'referencia fabricante', 'referencia do fabricante', 'part number', 'pn', 'p/n', 'mpn'];
 const MARCA_COLUNAS = ['marca', 'fabricante', 'brand'];
 const CARREGADOR_NOTEBOOK_TERMS = [
     'carregador notebook',
@@ -254,6 +255,7 @@ function criarMetaProduto(rotulo, valor, classe) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    configurarMenuLateral();
     await carregarImagens();
     configurarEventos();
     configurarLupaImagem();
@@ -354,6 +356,7 @@ function encontrarIndiceCabecalho(linhas) {
 
 function criarProdutoDaLinha(linha, cabecalhos, index) {
     const codigo = obterCampo(linha, cabecalhos, CODIGO_COLUNAS);
+    const codigoFabricante = obterCampo(linha, cabecalhos, CODIGO_FABRICANTE_COLUNAS);
     const nome = obterCampo(linha, cabecalhos, ['descricao', 'nome', 'produto']);
     const marca = obterCampo(linha, cabecalhos, MARCA_COLUNAS);
     const categoria = obterCampo(linha, cabecalhos, ['grupo', 'categoria', 'secao']) || 'Sem categoria';
@@ -365,6 +368,7 @@ function criarProdutoDaLinha(linha, cabecalhos, index) {
 
     return {
         codigo: codigoFinal,
+        codigoFabricante: String(codigoFabricante || '').trim(),
         nome: String(nome || 'Produto sem nome').trim(),
         marca: String(marca || '').trim(),
         categoria: String(categoria || 'Sem categoria').trim(),
@@ -397,6 +401,7 @@ function converterCsvEmProdutos(csv) {
 
     const cabecalhos = parseCsvLine(linhas[0] || '').map(normalizarTexto);
     const indiceCodigo = encontrarIndiceCampo(cabecalhos, CODIGO_COLUNAS, 0);
+    const indiceCodigoFabricante = encontrarIndiceCampo(cabecalhos, CODIGO_FABRICANTE_COLUNAS, -1);
     const indiceNome = encontrarIndiceCampo(cabecalhos, ['descricao', 'nome', 'produto'], 1);
     const indiceMarca = encontrarIndiceCampo(cabecalhos, MARCA_COLUNAS, -1);
     const indiceCategoria = encontrarIndiceCampo(cabecalhos, ['grupo', 'categoria', 'secao'], 2);
@@ -407,6 +412,7 @@ function converterCsvEmProdutos(csv) {
     return linhas.slice(1).map((linha, index) => {
         const colunas = parseCsvLine(linha);
         const codigo = String(colunas[indiceCodigo] || '').trim();
+        const codigoFabricante = indiceCodigoFabricante >= 0 ? String(colunas[indiceCodigoFabricante] || '').trim() : '';
         const nome = String(colunas[indiceNome] || '').trim();
         const marca = indiceMarca >= 0 ? String(colunas[indiceMarca] || '').trim() : '';
         const categoria = String(colunas[indiceCategoria] || 'Sem categoria').trim();
@@ -416,6 +422,7 @@ function converterCsvEmProdutos(csv) {
 
         return {
             codigo: codigo || `ITEM-${index + 1}`,
+            codigoFabricante,
             nome: nome || 'Produto sem nome',
             marca,
             categoria,
@@ -587,6 +594,44 @@ function configurarEventos() {
 
     document.addEventListener('keydown', event => {
         if (event.key === 'Escape') fecharModal();
+    });
+}
+
+function configurarMenuLateral() {
+    const sidebar = document.getElementById('siteSidebar');
+    const logoButton = document.querySelector('.logo');
+    const closeButton = document.querySelector('.sidebar-close');
+    const links = document.querySelectorAll('.site-sidebar a');
+
+    if (!sidebar || !logoButton) return;
+
+    const abrirMenu = () => {
+        sidebar.classList.add('is-open');
+        sidebar.setAttribute('aria-hidden', 'false');
+        logoButton.setAttribute('aria-expanded', 'true');
+        document.body.classList.add('sidebar-open');
+    };
+
+    const fecharMenu = () => {
+        sidebar.classList.remove('is-open');
+        sidebar.setAttribute('aria-hidden', 'true');
+        logoButton.setAttribute('aria-expanded', 'false');
+        document.body.classList.remove('sidebar-open');
+    };
+
+    logoButton.addEventListener('click', abrirMenu);
+    closeButton?.addEventListener('click', fecharMenu);
+
+    sidebar.addEventListener('click', event => {
+        if (event.target === sidebar) fecharMenu();
+    });
+
+    links.forEach(link => {
+        link.addEventListener('click', fecharMenu);
+    });
+
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape') fecharMenu();
     });
 }
 

@@ -4,20 +4,48 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Catálogo de Produtos</title>
+    <link rel="icon" type="image/png" href="imagens/logo-vstech-favicon.png">
+    <link rel="apple-touch-icon" href="imagens/logo-vstech-favicon.png">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header class="header">
         <div class="container">
-            <div class="logo">
-                <h1>VSTECH</h1>
-            </div>
+            <button class="logo" type="button" aria-label="Abrir menu da VSTECH" aria-controls="siteSidebar" aria-expanded="false">
+                <span class="logo-text">
+                    <img class="logo-wordmark" src="imagens/logo-vstech-site.png" alt="VSTECH Informática">
+               
+                </span>
+            </button>
             <nav class="nav" aria-label="Navegação principal">
                 <a href="index.html" class="nav-link active">Catálogo</a>
                 <a href="admin.html" class="nav-link">Administração</a>
             </nav>
         </div>
     </header>
+
+    <aside id="siteSidebar" class="site-sidebar" aria-hidden="true">
+        <div class="site-sidebar-panel" role="dialog" aria-modal="true" aria-labelledby="siteSidebarTitle">
+            <button class="sidebar-close" type="button" aria-label="Fechar menu">&times;</button>
+            <img class="sidebar-logo" src="imagens/logo-vstech-site.png" alt="VSTECH Informática">
+            <p class="sidebar-kicker">Assistência técnica e peças</p>
+            <h2 id="siteSidebarTitle">Como podemos ajudar?</h2>
+            <p class="sidebar-text">Confira nosso catálogo ou fale com a loja para encontrar a peça certa.</p>
+
+            <nav class="sidebar-links" aria-label="Links rápidos">
+                <a href="index.html">Início</a>
+                <a href="index.html#productsGrid">Catálogo de produtos</a>
+                <a href="admin.html">Administração</a>
+            </nav>
+
+            <div class="sidebar-contact-card">
+                <strong>Não encontrou o que precisava?</strong>
+                <p>Entre em contato conosco e envie o modelo ou código da peça.</p>
+                <a class="sidebar-contact-primary" href="https://wa.me/556993419933?text=Ol%C3%A1%2C%20n%C3%A3o%20encontrei%20o%20que%20precisava%20no%20cat%C3%A1logo." target="_blank" rel="noopener">Chamar no WhatsApp</a>
+                <a href="tel:+5569992903194">Ligar: (69) 99290-3194</a>
+            </div>
+        </div>
+    </aside>
 
     <section class="filters-section">
         <div class="container">
