@@ -1,6 +1,6 @@
 $pastaImagens = Join-Path $PSScriptRoot "imagens"
 $arquivoJson = Join-Path $pastaImagens "index.json"
-$extensoes = @(".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg")
+$extensoes = @(".jpg", ".jpeg", ".jfif", ".png", ".gif", ".webp", ".bmp", ".svg")
 
 if (-not (Test-Path -LiteralPath $pastaImagens)) {
     New-Item -ItemType Directory -Path $pastaImagens | Out-Null

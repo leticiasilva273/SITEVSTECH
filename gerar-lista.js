@@ -16,7 +16,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Extensões de imagem suportadas
-const extensoesSuportadas = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'];
+const extensoesSuportadas = ['.jpg', '.jpeg', '.jfif', '.png', '.gif', '.webp', '.bmp', '.svg'];
 
 // Caminho da pasta de imagens
 const pastaImagens = path.join(__dirname, 'imagens');

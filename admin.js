@@ -1,3 +1,5 @@
+const ADMIN_FILTERS_STORAGE_KEY = 'vstech_admin_filtros';
+
 const ADMIN = {
     autenticado: sessionStorage.getItem('adminAutenticado') === 'true',
     imagensDisponiveis: [],
@@ -39,6 +41,7 @@ async function inicializarAdmin() {
 
     await carregarImagensDisponiveis();
     renderizarCategoriasAdmin();
+    aplicarFiltrosAdminSalvos();
     renderizarProdutosAdmin();
 }
 
@@ -73,6 +76,7 @@ function configurarFiltrosAdmin() {
     if (searchInput) {
         searchInput.addEventListener('input', event => {
             ADMIN.filtros.busca = event.target.value;
+            salvarFiltrosAdmin();
             renderizarProdutosAdmin();
         });
     }
@@ -80,6 +84,7 @@ function configurarFiltrosAdmin() {
     if (manufacturerCodeFilter) {
         manufacturerCodeFilter.addEventListener('input', event => {
             ADMIN.filtros.codigoFabricante = event.target.value;
+            salvarFiltrosAdmin();
             renderizarProdutosAdmin();
         });
     }
@@ -87,6 +92,7 @@ function configurarFiltrosAdmin() {
     if (categoryFilter) {
         categoryFilter.addEventListener('change', event => {
             ADMIN.filtros.categoria = event.target.value;
+            salvarFiltrosAdmin();
             renderizarProdutosAdmin();
         });
     }
@@ -94,6 +100,7 @@ function configurarFiltrosAdmin() {
     if (sortFilter) {
         sortFilter.addEventListener('change', event => {
             ADMIN.filtros.ordenacao = event.target.value;
+            salvarFiltrosAdmin();
             renderizarProdutosAdmin();
         });
     }
@@ -140,6 +147,41 @@ function renderizarCategoriasAdmin() {
         option.textContent = categoria;
         categoryFilter.appendChild(option);
     });
+}
+
+function aplicarFiltrosAdminSalvos() {
+    try {
+        const filtrosSalvos = JSON.parse(localStorage.getItem(ADMIN_FILTERS_STORAGE_KEY)) || {};
+        const searchInput = document.getElementById('adminSearchInput');
+        const manufacturerCodeFilter = document.getElementById('adminManufacturerCodeFilter');
+        const categoryFilter = document.getElementById('adminCategoryFilter');
+        const sortFilter = document.getElementById('adminSortFilter');
+
+        const categoriaExiste = !filtrosSalvos.categoria || Array.from(categoryFilter?.options || []).some(option => option.value === filtrosSalvos.categoria);
+        const ordenacaoExiste = !filtrosSalvos.ordenacao || Array.from(sortFilter?.options || []).some(option => option.value === filtrosSalvos.ordenacao);
+
+        ADMIN.filtros.busca = String(filtrosSalvos.busca || '');
+        ADMIN.filtros.codigoFabricante = String(filtrosSalvos.codigoFabricante || '');
+        ADMIN.filtros.categoria = categoriaExiste ? String(filtrosSalvos.categoria || '') : '';
+        ADMIN.filtros.ordenacao = ordenacaoExiste ? String(filtrosSalvos.ordenacao || 'default') : 'default';
+
+        if (searchInput) searchInput.value = ADMIN.filtros.busca;
+        if (manufacturerCodeFilter) manufacturerCodeFilter.value = ADMIN.filtros.codigoFabricante;
+        if (categoryFilter) categoryFilter.value = ADMIN.filtros.categoria;
+        if (sortFilter) sortFilter.value = ADMIN.filtros.ordenacao;
+    } catch (error) {
+        console.warn('Nao foi possivel restaurar filtros do admin:', error);
+        ADMIN.filtros = {
+            busca: '',
+            codigoFabricante: '',
+            categoria: '',
+            ordenacao: 'default'
+        };
+    }
+}
+
+function salvarFiltrosAdmin() {
+    localStorage.setItem(ADMIN_FILTERS_STORAGE_KEY, JSON.stringify(ADMIN.filtros));
 }
 
 function renderizarProdutosAdmin() {

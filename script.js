@@ -4,6 +4,7 @@ const IMAGENS_PATH = './imagens/';
 const IMAGENS_MAP_URL = './imagens/produtos.json';
 const WHATSAPP_NUMBER = '556993419933';
 const STORAGE_KEY = 'vstech_imagens_produtos';
+const FILTERS_STORAGE_KEY = 'vstech_catalogo_filtros';
 const CODIGO_COLUNAS = ['codigo', 'cod', 'cod.', 'cod produto', 'codigo produto', 'referencia', 'referencia produto', 'sku'];
 const CODIGO_FABRICANTE_COLUNAS = ['codigo fabricante', 'codigo do fabricante', 'cod fabricante', 'cod. fabricante', 'cod fab', 'codigo fab', 'numero fabricante', 'numero do fabricante', 'num fabricante', 'n fabricante', 'nº fabricante', 'n° fabricante', 'no fabricante', 'referencia fabricante', 'referencia do fabricante', 'part number', 'pn', 'p/n', 'mpn'];
 const MARCA_COLUNAS = ['marca', 'fabricante', 'brand'];
@@ -88,6 +89,7 @@ const NOTEBOOK_INCLUDE_TERMS = [
     'hp'
 ];
 const NOTEBOOK_EXCLUDE_TERMS = [
+    'ADAPTADOR WIFI',
     'mouse',
     'teclado gamer',
     'teclado mecanico',
@@ -147,6 +149,7 @@ const NOTEBOOK_EXCLUDE_TERMS = [
     'hp desk'
 ];
 const CATEGORY_FILTER_EXCLUDE_TERMS = [
+    'ADAPTADOR WIFI',
     'periferico',
     'perifericos',
     'desktop',
@@ -274,6 +277,7 @@ async function carregarProdutos() {
         if (errorMsg) errorMsg.style.display = 'none';
 
         renderizarCategorias();
+        aplicarFiltrosSalvos();
         renderizarProdutos();
     } catch (error) {
         console.error('Erro ao carregar produtos:', error);
@@ -481,21 +485,16 @@ function obterQuantidadeEstoque(estoque) {
 function formatarValor(valor) {
     if (valor === null || valor === undefined || valor === '') return 'Consulte';
 
-    if (typeof valor === 'number') {
-        return valor.toLocaleString('pt-BR', {
-            style: 'currency',
-            currency: 'BRL'
-        });
-    }
-
     const texto = String(valor).trim();
     if (texto.includes('R$')) return texto;
 
-    const numero = Number(texto.replace(/\./g, '').replace(',', '.'));
+    const numero = obterValorNumerico(valor);
     if (Number.isFinite(numero)) {
         return numero.toLocaleString('pt-BR', {
             style: 'currency',
-            currency: 'BRL'
+            currency: 'BRL',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
         });
     }
 
@@ -511,12 +510,16 @@ function formatarValorComDesconto(valor, produto) {
 
     return valorComDesconto.toLocaleString('pt-BR', {
         style: 'currency',
-        currency: 'BRL'
+        currency: 'BRL',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
     });
 }
 
 function obterValorNumerico(valor) {
-    if (typeof valor === 'number') return valor;
+    if (typeof valor === 'number') {
+        return normalizarValorSemSeparador(valor);
+    }
 
     const texto = String(valor || '')
         .replace(/[^\d,.-]/g, '')
@@ -524,21 +527,40 @@ function obterValorNumerico(valor) {
 
     if (!texto) return NaN;
 
+    if (/^-?\d+$/.test(texto)) {
+        return normalizarValorSemSeparador(Number(texto));
+    }
+
     const ultimaVirgula = texto.lastIndexOf(',');
     const ultimoPonto = texto.lastIndexOf('.');
     const separadorDecimal = Math.max(ultimaVirgula, ultimoPonto);
     const temApenasUmSeparador = (texto.match(/[.,]/g) || []).length === 1;
     const casasDepoisDoSeparador = separadorDecimal >= 0 ? texto.length - separadorDecimal - 1 : 0;
 
-    if (temApenasUmSeparador && casasDepoisDoSeparador === 3) {
+    if (temApenasUmSeparador && casasDepoisDoSeparador === 3 && texto[separadorDecimal] === '.') {
         return Number(texto.replace(/[.,]/g, ''));
     }
 
     const inteiro = texto.slice(0, separadorDecimal).replace(/[.,]/g, '');
     const decimal = separadorDecimal >= 0 ? texto.slice(separadorDecimal + 1).replace(/[.,]/g, '') : '';
+
+    if (separadorDecimal >= 0 && Number(decimal) === 0 && inteiro.length >= 5) {
+        return normalizarValorSemSeparador(Number(inteiro));
+    }
+
     const numeroNormalizado = separadorDecimal >= 0 ? `${inteiro}.${decimal}` : texto.replace(/[.,]/g, '');
 
     return Number(numeroNormalizado);
+}
+
+function normalizarValorSemSeparador(valor) {
+    if (!Number.isFinite(valor)) return NaN;
+    if (!Number.isInteger(valor)) return valor;
+
+    const absoluto = Math.abs(valor);
+    if (absoluto >= 100000) return valor / 1000;
+    if (absoluto >= 10000) return valor / 100;
+    return valor;
 }
 
 function produtoEhCarregadorNotebook(produto) {
@@ -561,6 +583,7 @@ function configurarEventos() {
     if (searchInput) {
         searchInput.addEventListener('input', event => {
             APP.filtros.busca = event.target.value;
+            salvarFiltrosCatalogo();
             renderizarProdutos();
         });
     }
@@ -568,6 +591,7 @@ function configurarEventos() {
     if (categoryFilter) {
         categoryFilter.addEventListener('change', event => {
             APP.filtros.categoria = event.target.value;
+            salvarFiltrosCatalogo();
             renderizarProdutos();
         });
     }
@@ -578,6 +602,7 @@ function configurarEventos() {
             APP.filtros.categoria = '';
             if (searchInput) searchInput.value = '';
             if (categoryFilter) categoryFilter.value = '';
+            salvarFiltrosCatalogo();
             renderizarProdutos();
         });
     }
@@ -654,6 +679,29 @@ function renderizarCategorias() {
         option.textContent = categoria;
         categoryFilter.appendChild(option);
     });
+}
+
+function aplicarFiltrosSalvos() {
+    try {
+        const filtrosSalvos = JSON.parse(localStorage.getItem(FILTERS_STORAGE_KEY)) || {};
+        const searchInput = document.getElementById('searchInput');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const categoriaExiste = !filtrosSalvos.categoria || Array.from(categoryFilter?.options || []).some(option => option.value === filtrosSalvos.categoria);
+
+        APP.filtros.busca = String(filtrosSalvos.busca || '');
+        APP.filtros.categoria = categoriaExiste ? String(filtrosSalvos.categoria || '') : '';
+
+        if (searchInput) searchInput.value = APP.filtros.busca;
+        if (categoryFilter) categoryFilter.value = APP.filtros.categoria;
+    } catch (error) {
+        console.warn('Nao foi possivel restaurar filtros salvos:', error);
+        APP.filtros.busca = '';
+        APP.filtros.categoria = '';
+    }
+}
+
+function salvarFiltrosCatalogo() {
+    localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(APP.filtros));
 }
 
 function renderizarProdutos() {
