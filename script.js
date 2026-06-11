@@ -3,6 +3,7 @@ const CSV_URL = './dados/produtos.csv';
 const IMAGENS_PATH = './imagens/';
 const IMAGENS_MAP_URL = './imagens/produtos.json';
 const WHATSAPP_NUMBER = '556993419933';
+const SITE_PUBLIC_URL = 'https://leticiasilva273.github.io/SITEVSTECH/';
 const STORAGE_KEY = 'vstech_imagens_produtos';
 const FILTERS_STORAGE_KEY = 'vstech_catalogo_filtros';
 const CODIGO_COLUNAS = ['codigo', 'cod', 'cod.', 'cod produto', 'codigo produto', 'referencia', 'referencia produto', 'sku'];
@@ -194,6 +195,7 @@ const APP = {
     produtos: [],
     categoriasUnicas: new Set(),
     imagensPorProduto: {},
+    produtoAtual: null,
     carousel: {
         imagens: [],
         indice: 0
@@ -279,6 +281,7 @@ async function carregarProdutos() {
         renderizarCategorias();
         aplicarFiltrosSalvos();
         renderizarProdutos();
+        abrirProdutoPeloLink();
     } catch (error) {
         console.error('Erro ao carregar produtos:', error);
         if (loadingMsg) loadingMsg.style.display = 'none';
@@ -617,6 +620,17 @@ function configurarEventos() {
         });
     }
 
+    window.addEventListener('hashchange', () => {
+        if (hashEhDeProduto()) {
+            abrirProdutoPeloLink();
+            return;
+        }
+
+        if (APP.produtoAtual) {
+            fecharModal({ atualizarUrl: false });
+        }
+    });
+
     document.addEventListener('keydown', event => {
         if (event.key === 'Escape') fecharModal();
     });
@@ -832,10 +846,12 @@ function criarContadorImagens(produto) {
     return `<span class="product-image-count">${total} fotos</span>`;
 }
 
-function abrirModal(produto) {
+function abrirModal(produto, opcoes = {}) {
+    const { atualizarUrl = true } = opcoes;
     const modal = document.getElementById('productModal');
     if (!modal) return;
 
+    APP.produtoAtual = produto;
     modal.classList.remove('modal-closing');
     APP.carousel.imagens = obterImagensProduto(produto.codigo);
     APP.carousel.indice = 0;
@@ -859,7 +875,17 @@ function abrirModal(produto) {
     const modalInterestBtn = document.getElementById('modalInterestBtn');
     modalInterestBtn.onclick = () => abrirWhatsApp(produto);
 
+    const copyProductBtn = document.getElementById('copyProductBtn');
+    if (copyProductBtn) {
+        copyProductBtn.textContent = 'Compartilhar produto';
+        copyProductBtn.onclick = () => compartilharProduto(produto);
+    }
+
     modal.style.display = 'block';
+
+    if (atualizarUrl) {
+        atualizarLinkProduto(produto);
+    }
 }
 
 function atualizarCarouselModal(nomeProduto) {
@@ -935,16 +961,113 @@ function trocarImagemModal(direcao) {
     atualizarCarouselModal(nomeProduto);
 }
 
-function fecharModal() {
+function fecharModal(opcoes = {}) {
+    const { atualizarUrl = true } = opcoes;
     const modal = document.getElementById('productModal');
     if (!modal || modal.style.display === 'none') return;
 
+    APP.produtoAtual = null;
     modal.classList.add('modal-closing');
     setTimeout(() => {
         modal.style.display = 'none';
         modal.classList.remove('modal-closing');
     }, 180);
+
+    if (atualizarUrl && hashEhDeProduto()) {
+        history.pushState(null, '', obterUrlSemHash());
+    }
 }
+
+function abrirProdutoPeloLink() {
+    const id = obterIdProdutoDoHash();
+    if (!id || !APP.produtos.length) return;
+
+    const produto = APP.produtos.find(item => produtoVisivelNoCatalogo(item) && produtoCorrespondeAoId(item, id));
+    if (produto) {
+        abrirModal(produto, { atualizarUrl: false });
+    }
+}
+
+function atualizarLinkProduto(produto) {
+    const url = obterLinkProdutoAtual(produto);
+    if (window.location.href !== url) {
+        history.pushState(null, '', url);
+    }
+}
+
+async function compartilharProduto(produto) {
+    const url = obterLinkProdutoPublico(produto);
+    const texto = `Confira este produto da VSTECH: ${produto.nome}`;
+    const copyProductBtn = document.getElementById('copyProductBtn');
+
+    try {
+        if (navigator.share) {
+            await navigator.share({ title: produto.nome, text: texto, url });
+        } else if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(url);
+            mostrarStatusCompartilhamento(copyProductBtn, 'Link copiado');
+        } else {
+            window.prompt('Copie o link do produto:', url);
+        }
+    } catch (error) {
+        if (error.name !== 'AbortError') {
+            window.prompt('Copie o link do produto:', url);
+        }
+    }
+}
+
+function mostrarStatusCompartilhamento(botao, texto) {
+    if (!botao) return;
+
+    const textoOriginal = botao.textContent;
+    botao.textContent = texto;
+    setTimeout(() => {
+        botao.textContent = textoOriginal;
+    }, 1800);
+}
+
+function obterLinkProdutoAtual(produto) {
+    const id = criarIdProduto(produto);
+    return `${obterUrlSemHash()}#produto=${encodeURIComponent(id)}`;
+}
+
+function obterLinkProdutoPublico(produto) {
+    const id = criarIdProduto(produto);
+    return `${SITE_PUBLIC_URL}#produto=${encodeURIComponent(id)}`;
+}
+
+function obterUrlSemHash() {
+    return window.location.href.split('#')[0];
+}
+
+function hashEhDeProduto() {
+    return Boolean(obterIdProdutoDoHash());
+}
+
+function obterIdProdutoDoHash() {
+    const hash = window.location.hash.replace(/^#/, '');
+    if (!hash.startsWith('produto=')) return '';
+
+    return decodeURIComponent(hash.slice('produto='.length));
+}
+
+function criarIdProduto(produto) {
+    return String(produto.codigo || produto.nome || '').trim();
+}
+
+function produtoCorrespondeAoId(produto, id) {
+    const idNormalizado = normalizarIdProduto(id);
+    return [
+        produto.codigo,
+        produto.nome,
+        criarIdProduto(produto)
+    ].some(valor => normalizarIdProduto(valor) === idNormalizado);
+}
+
+function normalizarIdProduto(valor) {
+    return normalizarTexto(valor).replace(/\s+/g, ' ').trim();
+}
+
 function abrirWhatsApp(produto) {
 
     const mensagem = 
