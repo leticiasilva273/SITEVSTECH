@@ -1,4 +1,5 @@
 const ADMIN_FILTERS_STORAGE_KEY = 'vstech_admin_filtros';
+const ADMIN_CATEGORIAS_OCULTAS_FILTRO = new Set(['armazenamento']);
 
 const ADMIN = {
     autenticado: sessionStorage.getItem('adminAutenticado') === 'true',
@@ -138,7 +139,7 @@ function renderizarCategoriasAdmin() {
         window.APP.produtos
             .filter(produto => !window.produtoTemEstoque || window.produtoTemEstoque(produto))
             .map(produto => produto.categoria)
-            .filter(Boolean)
+            .filter(categoria => categoria && !ADMIN_CATEGORIAS_OCULTAS_FILTRO.has(normalizarTexto(categoria)))
     );
 
     Array.from(categoriasVisiveis).sort().forEach(categoria => {

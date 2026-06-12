@@ -90,6 +90,7 @@ const NOTEBOOK_INCLUDE_TERMS = [
     'hp'
 ];
 const NOTEBOOK_EXCLUDE_TERMS = [
+    'ARMAZENAMENTO',
     'ADAPTADOR WIFI',
     'mouse',
     'teclado gamer',
@@ -150,6 +151,7 @@ const NOTEBOOK_EXCLUDE_TERMS = [
     'hp desk'
 ];
 const CATEGORY_FILTER_EXCLUDE_TERMS = [
+    'ARMAZENAMENTO',
     'ADAPTADOR WIFI',
     'periferico',
     'perifericos',
