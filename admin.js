@@ -1,5 +1,5 @@
 const ADMIN_FILTERS_STORAGE_KEY = 'vstech_admin_filtros';
-const ADMIN_CATEGORIAS_OCULTAS_FILTRO = new Set(['armazenamento']);
+const ADMIN_CATEGORIAS_OCULTAS_FILTRO = new Set(['armazenamento', 'adaptador wifi', 'placa wifi', 'placa de wifi', 'memoria', 'memorias', 'memoria ram']);
 
 const ADMIN = {
     autenticado: sessionStorage.getItem('adminAutenticado') === 'true',
@@ -139,13 +139,13 @@ function renderizarCategoriasAdmin() {
         window.APP.produtos
             .filter(produto => !window.produtoTemEstoque || window.produtoTemEstoque(produto))
             .map(produto => produto.categoria)
-            .filter(categoria => categoria && !ADMIN_CATEGORIAS_OCULTAS_FILTRO.has(normalizarTexto(categoria)))
+            .filter(categoria => categoria && (!window.categoriaTemRotuloVisivel || window.categoriaTemRotuloVisivel(categoria)) && !ADMIN_CATEGORIAS_OCULTAS_FILTRO.has(normalizarTexto(categoria)))
     );
 
     Array.from(categoriasVisiveis).sort().forEach(categoria => {
         const option = document.createElement('option');
         option.value = categoria;
-        option.textContent = categoria;
+        option.textContent = formatarTextoAdmin(categoria);
         categoryFilter.appendChild(option);
     });
 }
@@ -270,18 +270,23 @@ function criarCardProdutoAdmin(produto) {
     card.setAttribute('data-codigo', produto.codigo);
 
     const imagens = window.obterImagensProduto(produto.codigo);
+    const categoriaInfo = (!window.categoriaTemRotuloVisivel || window.categoriaTemRotuloVisivel(produto.categoria)) ? `
+        <div class="admin-product-info">
+            <strong>Categoria:</strong> ${escapeHtml(formatarTextoAdmin(produto.categoria))}
+        </div>
+        ` : '';
 
     card.innerHTML = `
         <div class="admin-card-header">
             <div>
-                <div class="admin-product-code">${escapeHtml(produto.codigo)}</div>
-                <h3 class="admin-product-name">${escapeHtml(produto.nome)}</h3>
+                <div class="admin-product-code">${escapeHtml(formatarTextoAdmin(produto.codigo))}</div>
+                <h3 class="admin-product-name">${escapeHtml(formatarTextoAdmin(produto.nome))}</h3>
             </div>
         </div>
 
         ${produto.marca ? `
         <div class="admin-product-info">
-            <strong>Marca:</strong> ${escapeHtml(produto.marca)}
+            <strong>Marca:</strong> ${escapeHtml(formatarTextoAdmin(produto.marca))}
         </div>
         ` : ''}
         ${produto.codigoFabricante ? `
@@ -289,9 +294,7 @@ function criarCardProdutoAdmin(produto) {
             <strong>Número fabricante:</strong> ${escapeHtml(produto.codigoFabricante)}
         </div>
         ` : ''}
-        <div class="admin-product-info">
-            <strong>Categoria:</strong> ${escapeHtml(produto.categoria)}
-        </div>
+        ${categoriaInfo}
         <div class="admin-product-info">
             <strong>Valor:</strong> ${escapeHtml(produto.valor)}
         </div>
@@ -347,7 +350,7 @@ function abrirSeletorImagens(codigo) {
     ADMIN.selecaoTemporaria = new Set(window.obterImagensProduto(codigo));
 
     if (title) {
-        title.textContent = produto ? `Fotos de ${produto.codigo} - ${produto.nome}` : 'Selecionar fotos';
+        title.textContent = produto ? `Fotos de ${formatarTextoAdmin(produto.codigo)} - ${formatarTextoAdmin(produto.nome)}` : 'Selecionar fotos';
     }
 
     renderizarGaleriaImagens();
@@ -529,6 +532,11 @@ function escapeAttr(valor) {
 
 function escapeJs(valor) {
     return String(valor || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+function formatarTextoAdmin(valor) {
+    if (window.formatarTextoVisivel) return window.formatarTextoVisivel(valor);
+    return String(valor || '').trim().toLocaleUpperCase('pt-BR');
 }
 
 window.abrirSeletorImagens = abrirSeletorImagens;

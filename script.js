@@ -153,6 +153,11 @@ const NOTEBOOK_EXCLUDE_TERMS = [
 const CATEGORY_FILTER_EXCLUDE_TERMS = [
     'ARMAZENAMENTO',
     'ADAPTADOR WIFI',
+    'placa wifi',
+    'placa de wifi',
+    'memoria',
+    'memorias',
+    'memoria ram',
     'periferico',
     'perifericos',
     'desktop',
@@ -252,13 +257,14 @@ function gerarCoresMarca(marca) {
 
 function criarMetaProduto(rotulo, valor, classe) {
     if (!valor) return '';
+    const valorVisivel = formatarTextoVisivel(valor);
     if (classe !== 'product-brand') {
-        return `<div class="${classe}"><span>${escapeHtml(rotulo)}:</span> ${escapeHtml(valor)}</div>`;
+        return `<div class="${classe}"><span>${escapeHtml(rotulo)}:</span> ${escapeHtml(valorVisivel)}</div>`;
     }
 
     const classeMarca = obterClasseMarca(valor);
     const estiloMarca = classeMarca ? '' : gerarCoresMarca(valor);
-    return `<div class="${classe}${classeMarca ? ` ${classeMarca}` : ''}"${estiloMarca ? ` style="${estiloMarca}"` : ''}><span>${escapeHtml(rotulo)}:</span> ${escapeHtml(valor)}</div>`;
+    return `<div class="${classe}${classeMarca ? ` ${classeMarca}` : ''}"${estiloMarca ? ` style="${estiloMarca}"` : ''}><span>${escapeHtml(rotulo)}:</span> ${escapeHtml(valorVisivel)}</div>`;
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -622,6 +628,29 @@ function configurarEventos() {
         });
     }
 
+    const openContactModalBtn = document.getElementById('openContactModal');
+    const contactModal = document.getElementById('contactModal');
+    const contactModalClose = document.querySelector('#contactModal .modal-close');
+    const contactCloseBtn = document.getElementById('contactCloseBtn');
+
+    if (openContactModalBtn) {
+        openContactModalBtn.addEventListener('click', abrirContactModal);
+    }
+
+    if (contactModalClose) {
+        contactModalClose.addEventListener('click', fecharContactModal);
+    }
+
+    if (contactCloseBtn) {
+        contactCloseBtn.addEventListener('click', fecharContactModal);
+    }
+
+    if (contactModal) {
+        contactModal.addEventListener('click', event => {
+            if (event.target === contactModal) fecharContactModal();
+        });
+    }
+
     window.addEventListener('hashchange', () => {
         if (hashEhDeProduto()) {
             abrirProdutoPeloLink();
@@ -686,13 +715,13 @@ function renderizarCategorias() {
         APP.produtos
             .filter(produtoVisivelNoCatalogo)
             .map(produto => produto.categoria)
-            .filter(categoria => categoria && categoriaEhPermitidaNoFiltro(categoria))
+            .filter(categoria => categoria && categoriaTemRotuloVisivel(categoria) && categoriaEhPermitidaNoFiltro(categoria))
     );
 
     Array.from(categoriasVisiveis).sort().forEach(categoria => {
         const option = document.createElement('option');
         option.value = categoria;
-        option.textContent = categoria;
+        option.textContent = formatarTextoVisivel(categoria);
         categoryFilter.appendChild(option);
     });
 }
@@ -787,6 +816,14 @@ function categoriaEhPermitidaNoFiltro(categoria) {
     return !CATEGORY_FILTER_EXCLUDE_TERMS.some(termo => texto.includes(normalizarTexto(termo)));
 }
 
+function categoriaTemRotuloVisivel(categoria) {
+    return normalizarTexto(categoria) !== 'sem categoria';
+}
+
+function formatarTextoVisivel(valor) {
+    return String(valor || '').trim().toLocaleUpperCase('pt-BR');
+}
+
 function criarCardProduto(produto) {
     const card = document.createElement('article');
     card.className = 'product-card';
@@ -795,22 +832,25 @@ function criarCardProduto(produto) {
     card.setAttribute('aria-label', `Ver detalhes de ${produto.nome}`);
 
     const statusClasse = obterClasseEstoque(produto.estoque);
+    const categoriaBadge = categoriaTemRotuloVisivel(produto.categoria)
+        ? `<span class="product-category-badge">${escapeHtml(formatarTextoVisivel(produto.categoria))}</span>`
+        : '';
 
     card.innerHTML = `
         <div class="product-image-container">
             ${criarImagemProduto(produto)}
             ${criarContadorImagens(produto)}
-            <span class="product-category-badge">${escapeHtml(produto.categoria)}</span>
+            ${categoriaBadge}
         </div>
         <div class="product-content">
             <div class="product-meta-row">
                 ${criarMetaProduto('Codigo', produto.codigo, 'product-code')}
                 ${criarMetaProduto('Marca', produto.marca, 'product-brand')}
             </div>
-            <h2 class="product-name">${escapeHtml(produto.nome)}</h2>
-            <p class="product-description">${escapeHtml(produto.descricao)}</p>
+            <h2 class="product-name">${escapeHtml(formatarTextoVisivel(produto.nome))}</h2>
+            <p class="product-description">${escapeHtml(formatarTextoVisivel(produto.descricao))}</p>
             <div class="product-price">${escapeHtml(produto.valor)}</div>
-            <div class="product-stock ${statusClasse}">${escapeHtml(produto.estoque)}</div>
+            <div class="product-stock ${statusClasse}">${escapeHtml(formatarTextoVisivel(produto.estoque))}</div>
             <button type="button" class="btn-interest">Tenho Interesse</button>
         </div>
     `;
@@ -858,19 +898,25 @@ function abrirModal(produto, opcoes = {}) {
     APP.carousel.imagens = obterImagensProduto(produto.codigo);
     APP.carousel.indice = 0;
 
-    document.getElementById('modalName').textContent = produto.nome;
-    document.getElementById('modalCode').textContent = produto.codigo;
+    document.getElementById('modalName').textContent = formatarTextoVisivel(produto.nome);
+    document.getElementById('modalCode').textContent = formatarTextoVisivel(produto.codigo);
     const modalBrand = document.getElementById('modalBrand');
     if (modalBrand) {
         const classeMarca = obterClasseMarca(produto.marca);
-        modalBrand.textContent = produto.marca || 'Nao informada';
+        modalBrand.textContent = formatarTextoVisivel(produto.marca || 'Nao informada');
         modalBrand.className = classeMarca;
         modalBrand.style.cssText = `display:inline-flex; width:fit-content; padding:3px 8px; border:1px solid; border-radius:999px; font-weight:900; ${classeMarca ? '' : gerarCoresMarca(produto.marca)}`;
     }
-    document.getElementById('modalCategory').textContent = produto.categoria;
-    document.getElementById('modalDescription').textContent = produto.descricao;
+    const modalCategory = document.getElementById('modalCategory');
+    const modalCategoryRow = modalCategory?.closest('.modal-info');
+    if (modalCategory && modalCategoryRow) {
+        const deveMostrarCategoria = categoriaTemRotuloVisivel(produto.categoria);
+        modalCategoryRow.style.display = deveMostrarCategoria ? '' : 'none';
+        modalCategory.textContent = deveMostrarCategoria ? formatarTextoVisivel(produto.categoria) : '';
+    }
+    document.getElementById('modalDescription').textContent = formatarTextoVisivel(produto.descricao);
     document.getElementById('modalPrice').textContent = produto.valor;
-    document.getElementById('modalStock').textContent = produto.estoque;
+    document.getElementById('modalStock').textContent = formatarTextoVisivel(produto.estoque);
 
     atualizarCarouselModal(produto.nome);
 
@@ -1088,6 +1134,32 @@ Poderia me passar mais informações?`;
     window.open(url, '_blank', 'noopener');
 }
 
+function abrirContactModal() {
+    const contactModal = document.getElementById('contactModal');
+    const contactWhatsAppLink = document.getElementById('contactWhatsAppLink');
+    if (!contactModal) return;
+
+    const mensagem = 'Olá! Não encontrei o que precisava no catálogo. Poderiam fazer uma busca manual para mim, por favor?';
+    const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(mensagem)}`;
+
+    if (contactWhatsAppLink) {
+        contactWhatsAppLink.href = whatsappUrl;
+    }
+
+    contactModal.style.display = 'block';
+}
+
+function fecharContactModal() {
+    const contactModal = document.getElementById('contactModal');
+    if (!contactModal || contactModal.style.display === 'none') return;
+
+    contactModal.classList.add('modal-closing');
+    setTimeout(() => {
+        contactModal.style.display = 'none';
+        contactModal.classList.remove('modal-closing');
+    }, 180);
+}
+
 async function carregarImagens() {
     let imagensPublicadas = {};
 
@@ -1162,3 +1234,5 @@ window.produtoVisivelNoCatalogo = produtoVisivelNoCatalogo;
 window.produtoTemEstoque = produtoTemEstoque;
 window.produtoEhPecaNotebook = produtoEhPecaNotebook;
 window.categoriaEhPermitidaNoFiltro = categoriaEhPermitidaNoFiltro;
+window.categoriaTemRotuloVisivel = categoriaTemRotuloVisivel;
+window.formatarTextoVisivel = formatarTextoVisivel;
