@@ -198,6 +198,47 @@ const NOTEBOOK_BRAND_TERMS = [
     'macbook'
 ];
 
+const ABREVIACOES_AMIGAVEIS = {
+    'nb': 'Notebook',
+    'pç': 'Peça',
+    'pc': 'PC',
+    'hd': 'HD',
+    'ssd': 'SSD',
+    'ram': 'RAM',
+    'cpu': 'CPU',
+    'gpu': 'GPU',
+    'wifi': 'WiFi',
+    'usb': 'USB',
+    'hdmi': 'HDMI',
+    'vga': 'VGA',
+    'sata': 'SATA',
+    'pcie': 'PCIe',
+    'ddram': 'DDR',
+    'ddr': 'DDR'
+};
+
+const CATEGORIAS_AMIGAVEIS = {
+    'ALTO-FALANTE': 'ALTO-FALANTES PARA NOTEBOOK',
+    'BATERIAS NOTEBOOK': 'BATERIAS PARA NOTEBOOK',
+    'CABO ADAPTADOR': 'CABOS E ADAPTADORES',
+    'CARCAÇAS': 'CARCAÇAS PARA NOTEBOOK',
+    'DC JACK': 'CONECTORES DE ENERGIA (DC JACK)',
+    'DOBRADIÇAS': 'DOBRADIÇAS PARA NOTEBOOK',
+    'FAN/DISSIPADOR': 'COOLERS E DISSIPADORES',
+    'FLAT': 'CABOS FLAT',
+    'FLAT TELA': 'CABOS FLAT PARA TELA',
+    'FONTES': 'FONTES DE ALIMENTAÇÃO',
+    'FONTES NB': 'CARREGADORES PARA NOTEBOOK',
+    'NB TECLADO PÇ': 'TECLADOS PARA NOTEBOOK',
+    'PASTA TERMICA': 'PASTA TÉRMICA',
+    'PEÇAS REPOSIÇÃO': 'PEÇAS DE REPOSIÇÃO',
+    'PLACA AUXILIAR': 'PLACAS AUXILIARES',
+    'PLACA POWER': 'PLACAS POWER E BOTÃO LIGA/DESLIGA',
+    'TELAS NOTEBOOK': 'TELAS PARA NOTEBOOK',
+    'TINTAS': 'TINTAS PARA IMPRESSORA',
+    'TONER': 'TONER PARA IMPRESSORA',
+    'TOUCHPAD': 'TOUCHPAD PARA NOTEBOOK'
+};
 const APP = {
     produtos: [],
     categoriasUnicas: new Set(),
@@ -764,6 +805,8 @@ function renderizarProdutos() {
     if (noResults) {
         noResults.style.display = produtosFiltrados.length === 0 ? 'block' : 'none';
     }
+
+    atualizarNotaCarcaca();
 }
 
 function filtrarProdutos() {
@@ -811,9 +854,30 @@ function produtoEhPecaNotebook(produto) {
     return (possuiTermoNotebook || parecePecaDeNotebookPorMarca) && !possuiTermoExcluido;
 }
 
+function produtoEhCarcaca(produto) {
+    const texto = normalizarTexto([
+        produto.codigo,
+        produto.nome,
+        produto.marca,
+        produto.categoria,
+        produto.descricao
+    ].join(' '));
+
+    return ['carcaca', 'carcacas', 'carcaça', 'carcaças'].some(termo => texto.includes(normalizarTexto(termo)));
+}
+
 function categoriaEhPermitidaNoFiltro(categoria) {
     const texto = normalizarTexto(categoria);
     return !CATEGORY_FILTER_EXCLUDE_TERMS.some(termo => texto.includes(normalizarTexto(termo)));
+}
+
+function atualizarNotaCarcaca() {
+    const note = document.getElementById('catalogCarcacaNote');
+    if (!note) return;
+
+    const categoriaSelecionada = normalizarTexto(APP.filtros.categoria || '');
+    const mostrarNota = categoriaSelecionada.includes('carcaca');
+    note.style.display = mostrarNota ? 'grid' : 'none';
 }
 
 function categoriaTemRotuloVisivel(categoria) {
@@ -821,12 +885,25 @@ function categoriaTemRotuloVisivel(categoria) {
 }
 
 function formatarTextoVisivel(valor) {
-    return String(valor || '').trim().toLocaleUpperCase('pt-BR');
+    const textoOriginal = String(valor || '').trim();
+
+    if (CATEGORIAS_AMIGAVEIS[textoOriginal]) {
+        return CATEGORIAS_AMIGAVEIS[textoOriginal];
+    }
+
+    let texto = textoOriginal;
+
+    Object.entries(ABREVIACOES_AMIGAVEIS).forEach(([abrev, nome]) => {
+        const regex = new RegExp(`\\b${abrev}\\b`, 'gi');
+        texto = texto.replace(regex, nome);
+    });
+
+    return texto;
 }
 
 function criarCardProduto(produto) {
     const card = document.createElement('article');
-    card.className = 'product-card';
+    card.className = `product-card${produtoEhCarcaca(produto) ? ' product-card--carcaca' : ''}`;
     card.tabIndex = 0;
     card.setAttribute('role', 'button');
     card.setAttribute('aria-label', `Ver detalhes de ${produto.nome}`);
@@ -849,6 +926,7 @@ function criarCardProduto(produto) {
             </div>
             <h2 class="product-name">${escapeHtml(formatarTextoVisivel(produto.nome))}</h2>
             <p class="product-description">${escapeHtml(formatarTextoVisivel(produto.descricao))}</p>
+            ${produtoEhCarcaca(produto) ? '<div class="product-carcaca-note">Sem fotos neste catálogo. Só listamos as carcaças disponíveis, mesmo quando são apenas tampa ou palmrest.</div>' : ''}
             <div class="product-price">${escapeHtml(produto.valor)}</div>
             <div class="product-stock ${statusClasse}">${escapeHtml(formatarTextoVisivel(produto.estoque))}</div>
             <button type="button" class="btn-interest">Tenho Interesse</button>
@@ -873,6 +951,10 @@ function criarCardProduto(produto) {
 }
 
 function criarImagemProduto(produto) {
+    if (produtoEhCarcaca(produto)) {
+        return '<div class="product-placeholder product-placeholder--carcaca" aria-hidden="true">Carcaça - sem foto no catálogo</div>';
+    }
+
     const primeiraImagem = obterImagensProduto(produto.codigo)[0];
 
     if (!primeiraImagem) {
