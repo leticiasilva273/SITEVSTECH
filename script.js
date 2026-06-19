@@ -754,7 +754,6 @@ function renderizarCategorias() {
 
     const categoriasVisiveis = new Set(
         APP.produtos
-            .filter(produtoVisivelNoCatalogo)
             .map(produto => produto.categoria)
             .filter(categoria => categoria && categoriaTemRotuloVisivel(categoria) && categoriaEhPermitidaNoFiltro(categoria))
     );
@@ -866,6 +865,17 @@ function produtoEhCarcaca(produto) {
     return ['carcaca', 'carcacas', 'carcaça', 'carcaças'].some(termo => texto.includes(normalizarTexto(termo)));
 }
 
+function produtoTemImagem(produto) {
+    return obterImagensProduto(produto.codigo).length > 0;
+}
+
+function produtoVisivelNoCatalogo(produto) {
+    const visivelPorEstoque = produtoTemEstoque(produto);
+    const visivelPorCarcaca = !produtoEhCarcaca(produto) || produtoTemImagem(produto);
+
+    return visivelPorEstoque && categoriaEhPermitidaNoFiltro(produto.categoria) && visivelPorCarcaca;
+}
+
 function categoriaEhPermitidaNoFiltro(categoria) {
     const texto = normalizarTexto(categoria);
     return !CATEGORY_FILTER_EXCLUDE_TERMS.some(termo => texto.includes(normalizarTexto(termo)));
@@ -926,7 +936,6 @@ function criarCardProduto(produto) {
             </div>
             <h2 class="product-name">${escapeHtml(formatarTextoVisivel(produto.nome))}</h2>
             <p class="product-description">${escapeHtml(formatarTextoVisivel(produto.descricao))}</p>
-            ${produtoEhCarcaca(produto) ? '<div class="product-carcaca-note">Sem fotos neste catálogo. Só listamos as carcaças disponíveis, mesmo quando são apenas tampa ou palmrest.</div>' : ''}
             <div class="product-price">${escapeHtml(produto.valor)}</div>
             <div class="product-stock ${statusClasse}">${escapeHtml(formatarTextoVisivel(produto.estoque))}</div>
             <button type="button" class="btn-interest">Tenho Interesse</button>
@@ -951,10 +960,6 @@ function criarCardProduto(produto) {
 }
 
 function criarImagemProduto(produto) {
-    if (produtoEhCarcaca(produto)) {
-        return '<div class="product-placeholder product-placeholder--carcaca" aria-hidden="true">Carcaça - sem foto no catálogo</div>';
-    }
-
     const primeiraImagem = obterImagensProduto(produto.codigo)[0];
 
     if (!primeiraImagem) {
