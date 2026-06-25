@@ -165,7 +165,15 @@ const CATEGORY_FILTER_EXCLUDE_TERMS = [
     'peca impressora',
     'processador',
     'monitores',
-    'monitor'
+    'monitor',
+    'pecas reposicao',
+    'toner',
+    'cartucho',
+    'impressora',
+    'impressoras',
+    'tinta',
+    'papel',
+    'bandeja saida'
 ];
 
 const NOTEBOOK_PART_HINT_TERMS = [
@@ -225,13 +233,11 @@ const CATEGORIAS_AMIGAVEIS = {
     'DC JACK': 'CONECTORES DE ENERGIA (DC JACK)',
     'DOBRADIÇAS': 'DOBRADIÇAS PARA NOTEBOOK',
     'FAN/DISSIPADOR': 'COOLERS E DISSIPADORES',
-    'FLAT': 'CABOS FLAT',
+    'FLAT': 'FLETS SATA NOTEBOOK',
     'FLAT TELA': 'CABOS FLAT PARA TELA',
-    'FONTES': 'FONTES DE ALIMENTAÇÃO',
     'FONTES NB': 'CARREGADORES PARA NOTEBOOK',
     'NB TECLADO PÇ': 'TECLADOS PARA NOTEBOOK',
-    'PASTA TERMICA': 'PASTA TÉRMICA',
-    'PEÇAS REPOSIÇÃO': 'PEÇAS DE REPOSIÇÃO',
+    
     'PLACA AUXILIAR': 'PLACAS AUXILIARES',
     'PLACA POWER': 'PLACAS POWER E BOTÃO LIGA/DESLIGA',
     'TELAS NOTEBOOK': 'TELAS PARA NOTEBOOK',
@@ -322,6 +328,11 @@ async function carregarProdutos() {
 
     try {
         APP.produtos = await carregarProdutosDaPlanilha();
+        // remover categorias indesejadas: fontes e pasta térmica
+        APP.produtos = APP.produtos.filter(produto => {
+            const cat = normalizarTexto(produto.categoria || '');
+            return !(cat.includes('fonte') || cat.includes('pasta termic') || cat.includes('pastatermic'));
+        });
         APP.categoriasUnicas = new Set(APP.produtos.map(produto => produto.categoria).filter(Boolean));
 
         if (loadingMsg) loadingMsg.style.display = 'none';
@@ -750,10 +761,12 @@ function renderizarCategorias() {
     const categoryFilter = document.getElementById('categoryFilter');
     if (!categoryFilter) return;
 
-    categoryFilter.innerHTML = '<option value="">Todas as categorias</option>';
+    categoryFilter.innerHTML = '<option value="">TODAS AS CATEGORIAS</option>';
 
+    // Apenas categorias que possuem ao menos um produto visível no catálogo
     const categoriasVisiveis = new Set(
         APP.produtos
+            .filter(produto => produtoVisivelNoCatalogo(produto))
             .map(produto => produto.categoria)
             .filter(categoria => categoria && categoriaTemRotuloVisivel(categoria) && categoriaEhPermitidaNoFiltro(categoria))
     );
@@ -896,9 +909,10 @@ function categoriaTemRotuloVisivel(categoria) {
 
 function formatarTextoVisivel(valor) {
     const textoOriginal = String(valor || '').trim();
+    const chave = textoOriginal.toLocaleUpperCase('pt-BR');
 
-    if (CATEGORIAS_AMIGAVEIS[textoOriginal]) {
-        return CATEGORIAS_AMIGAVEIS[textoOriginal];
+    if (CATEGORIAS_AMIGAVEIS[chave]) {
+        return String(CATEGORIAS_AMIGAVEIS[chave] || '').toLocaleUpperCase('pt-BR');
     }
 
     let texto = textoOriginal;
@@ -908,7 +922,7 @@ function formatarTextoVisivel(valor) {
         texto = texto.replace(regex, nome);
     });
 
-    return texto;
+    return String(texto || '').toLocaleUpperCase('pt-BR');
 }
 
 function criarCardProduto(produto) {
@@ -938,7 +952,7 @@ function criarCardProduto(produto) {
             <p class="product-description">${escapeHtml(formatarTextoVisivel(produto.descricao))}</p>
             <div class="product-price">${escapeHtml(produto.valor)}</div>
             <div class="product-stock ${statusClasse}">${escapeHtml(formatarTextoVisivel(produto.estoque))}</div>
-            <button type="button" class="btn-interest">Tenho Interesse</button>
+            <button type="button" class="btn-interest">TENHO INTERESSE</button>
         </div>
     `;
 
@@ -963,10 +977,10 @@ function criarImagemProduto(produto) {
     const primeiraImagem = obterImagensProduto(produto.codigo)[0];
 
     if (!primeiraImagem) {
-        return '<div class="product-placeholder" aria-hidden="true">Sem foto</div>';
+        return '<div class="product-placeholder" aria-hidden="true">SEM FOTO</div>';
     }
 
-    return `<img class="product-image" src="${IMAGENS_PATH}${encodeURI(primeiraImagem)}" alt="${escapeHtml(produto.nome)}" onerror="this.outerHTML='<div class=&quot;product-placeholder&quot; aria-hidden=&quot;true&quot;>Sem foto</div>'">`;
+    return `<img class="product-image" src="${IMAGENS_PATH}${encodeURI(primeiraImagem)}" alt="${escapeHtml(produto.nome)}" onerror="this.outerHTML='<div class=&quot;product-placeholder&quot; aria-hidden=&quot;true&quot;>SEM FOTO</div>'">`;
 }
 
 function criarContadorImagens(produto) {
@@ -1206,15 +1220,15 @@ function normalizarIdProduto(valor) {
 function abrirWhatsApp(produto) {
 
     const mensagem = 
-`Olá! 
+`OLÁ! 
 
-Tenho interesse neste produto:
+TENHO INTERESSE NESTE PRODUTO:
 
- Produto: ${produto.nome}
- Código: ${produto.codigo}
- ${produto.marca ? `Marca: ${produto.marca}\n ` : ''}Valor: ${produto.valor}
+ PRODUTO: ${produto.nome}
+ CÓDIGO: ${produto.codigo}
+ ${produto.marca ? `MARCA: ${produto.marca}\n ` : ''}VALOR: ${produto.valor}
 
-Poderia me passar mais informações?`;
+PODERIA ME PASSAR MAIS INFORMAÇÕES?`;
 
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(mensagem)}`;
 

@@ -1,5 +1,25 @@
 const ADMIN_FILTERS_STORAGE_KEY = 'vstech_admin_filtros';
-const ADMIN_CATEGORIAS_OCULTAS_FILTRO = new Set(['armazenamento', 'adaptador wifi', 'placa wifi', 'placa de wifi', 'memoria', 'memorias', 'memoria ram']);
+const ADMIN_CATEGORIAS_OCULTAS_FILTRO = new Set([
+    'armazenamento',
+    'adaptador wifi',
+    'placa wifi',
+    'placa de wifi',
+    'memoria',
+    'memorias',
+    'memoria ram',
+    'fonte',
+    'fontes',
+    'pasta termica',
+    'pecas reposicao',
+    'toner',
+    'cartucho',
+    'impressora',
+    'impressoras',
+    'tinta',
+    'papel',
+    'bandeja saida',
+    'pc impressora'
+]);
 
 const ADMIN = {
     autenticado: sessionStorage.getItem('adminAutenticado') === 'true',
@@ -133,7 +153,7 @@ function renderizarCategoriasAdmin() {
     const categoryFilter = document.getElementById('adminCategoryFilter');
     if (!categoryFilter || !window.APP?.categoriasUnicas) return;
 
-    categoryFilter.innerHTML = '<option value="">Todas</option>';
+    categoryFilter.innerHTML = '<option value="">TODAS</option>';
 
     const categoriasVisiveis = new Set(
         window.APP.produtos
@@ -240,8 +260,9 @@ function filtrarProdutosAdmin() {
         const correspondeCategoria = !categoria || produto.categoria === categoria;
 
         const apareceNoAdmin = !window.produtoTemEstoque || window.produtoTemEstoque(produto);
+        const categoriaPermitida = !ADMIN_CATEGORIAS_OCULTAS_FILTRO.has(normalizarTexto(produto.categoria));
 
-        return apareceNoAdmin && correspondeBusca && correspondeCodigoFabricante && correspondeCategoria;
+        return apareceNoAdmin && categoriaPermitida && correspondeBusca && correspondeCodigoFabricante && correspondeCategoria;
     });
 
     return ordenarProdutosAdmin(produtos);
@@ -308,16 +329,16 @@ function criarCardProdutoAdmin(produto) {
         <div class="image-selector">
             <span class="image-summary" id="summary_${escapeAttr(produto.codigo)}">${imagens.length} foto(s) selecionada(s)</span>
             <button type="button" class="btn-pick-images" onclick="abrirSeletorImagens('${escapeJs(produto.codigo)}')">
-                Escolher fotos
+                ESCOLHER FOTOS
             </button>
-            ${ADMIN.imagensDisponiveis.length === 0 ? '<small style="color: var(--cor-alerta); display: block; margin-top: 8px;">Nenhuma imagem encontrada. Coloque imagens na pasta /imagens/ e rode atualizar-imagens.bat.</small>' : ''}
+            ${ADMIN.imagensDisponiveis.length === 0 ? '<small style="color: var(--cor-alerta); display: block; margin-top: 8px;">NENHUMA IMAGEM ENCONTRADA. COLOQUE IMAGENS NA PASTA /IMAGENS/ E RODE ATUALIZAR-IMAGENS.BAT.</small>' : ''}
         </div>
 
         <div id="status_${escapeAttr(produto.codigo)}"></div>
 
         <div class="admin-card-actions" style="margin-top: 15px;">
             <button class="btn-remove" onclick="removerImagemProduto('${escapeJs(produto.codigo)}')">
-                Remover fotos
+                REMOVER FOTOS
             </button>
         </div>
     `;
@@ -329,7 +350,7 @@ function renderizarPreviewSelecionadas(codigo) {
     const imagens = window.obterImagensProduto(codigo);
 
     if (imagens.length === 0) {
-        return '<div class="image-placeholder">Sem foto</div>';
+        return '<div class="image-placeholder">SEM FOTO</div>';
     }
 
     const miniaturas = imagens.slice(0, 8).map(imagem => `
@@ -350,7 +371,7 @@ function abrirSeletorImagens(codigo) {
     ADMIN.selecaoTemporaria = new Set(window.obterImagensProduto(codigo));
 
     if (title) {
-        title.textContent = produto ? `Fotos de ${formatarTextoAdmin(produto.codigo)} - ${formatarTextoAdmin(produto.nome)}` : 'Selecionar fotos';
+        title.textContent = produto ? `FOTOS DE ${formatarTextoAdmin(produto.codigo)} - ${formatarTextoAdmin(produto.nome)}` : 'SELECIONAR FOTOS';
     }
 
     renderizarGaleriaImagens();
@@ -386,7 +407,7 @@ function renderizarGaleriaImagens() {
     });
 
     if (imagensDisponiveisParaProduto.length === 0) {
-        gallery.innerHTML = '<p>Nenhuma imagem livre encontrada. Coloque novas imagens na pasta imagens e rode atualizar-imagens.bat.</p>';
+        gallery.innerHTML = '<p>NENHUMA IMAGEM LIVRE ENCONTRADA. COLOQUE NOVAS IMAGENS NA PASTA IMAGENS E RODE ATUALIZAR-IMAGENS.BAT.</p>';
         atualizarContadorSelecao();
         return;
     }
@@ -424,7 +445,7 @@ function alternarImagemSelecionada(imagem) {
 
 function atualizarContadorSelecao() {
     const count = document.getElementById('adminImageSelectionCount');
-    if (count) count.textContent = `${ADMIN.selecaoTemporaria.size} foto(s) selecionada(s)`;
+    if (count) count.textContent = `${ADMIN.selecaoTemporaria.size} FOTO(S) SELECIONADA(S)`;
 }
 
 function salvarSelecaoImagens() {
@@ -435,19 +456,19 @@ function salvarSelecaoImagens() {
     window.salvarImagensNoLocalStorage();
 
     atualizarCardProduto(codigo);
-    mostrarStatus(codigo, 'Fotos salvas com sucesso!', 'status-saved');
+    mostrarStatus(codigo, 'FOTOS SALVAS COM SUCESSO!', 'status-saved');
     fecharSeletorImagens();
 }
 
 function removerImagemProduto(codigo) {
-    const confirmacao = confirm('Tem certeza que deseja remover todas as fotos deste produto?');
+    const confirmacao = confirm('TEM CERTEZA QUE DESEJA REMOVER TODAS AS FOTOS DESTE PRODUTO?');
     if (!confirmacao) return;
 
     window.APP.imagensPorProduto[codigo] = [];
     window.salvarImagensNoLocalStorage();
 
     atualizarCardProduto(codigo);
-    mostrarStatus(codigo, 'Fotos removidas', 'status-empty');
+    mostrarStatus(codigo, 'FOTOS REMOVIDAS', 'status-empty');
 }
 
 function atualizarCardProduto(codigo) {
@@ -456,7 +477,7 @@ function atualizarCardProduto(codigo) {
     const imagens = window.obterImagensProduto(codigo);
 
     if (preview) preview.innerHTML = renderizarPreviewSelecionadas(codigo);
-    if (summary) summary.textContent = `${imagens.length} foto(s) selecionada(s)`;
+    if (summary) summary.textContent = `${imagens.length} FOTO(S) SELECIONADA(S)`;
 }
 
 function mostrarStatus(codigo, mensagem, classe) {
